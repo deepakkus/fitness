@@ -140,7 +140,9 @@ export default function VendorProfileBanner({ userData }: { userData: UserData }
       } catch (err: any) {
         setError('Payment failed. Please try again.');
         setLoading(false);
-        onError && onError('Payment failed. Please try again.');
+		if (onError) {
+        onError('Payment failed. Please try again.');
+		}
       }
     };
 
