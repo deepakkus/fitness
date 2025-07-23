@@ -1,0 +1,108 @@
+
+
+.container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  align-items: center;
+}
+
+.controlGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.select {
+  padding: 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+.refreshButton {
+  padding: 0.5rem 1rem;
+  background-color: #0070f3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.refreshButton:hover {
+  background-color: #0051cc;
+}
+
+.refreshButton:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.clearButton {
+  padding: 0.5rem 1rem;
+  background-color: #e53e3e;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 0.5rem;
+}
+
+.clearButton:hover {
+  background-color: #c53030;
+}
+
+.clearButton:disabled {
+  background-color: #feb2b2;
+  cursor: not-allowed;
+}
+
+.success {
+  padding: 1rem;
+  border-radius: 4px;
+  background-color: #f0fff4;
+  color: #38a169;
+  margin-bottom: 1rem;
+  border-left: 4px solid #38a169;
+}
+
+.logContainer {
+  border: 1px solid #eaeaea;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #f8f8f8;
+}
+
+.logs {
+  padding: 1rem;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  font-family: monospace;
+  font-size: 0.9rem;
+  height: 70vh;
+  overflow-y: auto;
+  margin: 0;
+  background-color: #2d2d2d;
+  color: #e0e0e0;
+}
+
+.error {
+  padding: 1rem;
+  border-radius: 4px;
+  background-color: #fff0f0;
+  color: #e00;
+  margin-bottom: 1rem;
+  border-left: 4px solid #e00;
+}
+
+.loading {
+  padding: 2rem;
+  text-align: center;
+  color: #666;
+}

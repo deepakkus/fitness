@@ -1,0 +1,14 @@
+/*
+  Based on TailwindCSS recommendations,
+  consider using classes instead of the `@apply` directive
+  @see https://tailwindcss.com/docs/reusing-styles#avoiding-premature-abstraction
+*/
+.heading {
+  @apply text-slate-700 text-[22px] not-italic font-bold leading-[normal] mb-5;
+}
+.activeTab {
+  @apply text-[color:#f9690e] border-b-[color:#f9690e] border-b-[color:#f9690e] border-b-2 border-solid;
+}
+.text {
+  @apply text-slate-700 text-[15px] not-italic font-normal leading-[normal] border-b-slate-200 px-[22px] py-[15px] border-b border-solid;
+}

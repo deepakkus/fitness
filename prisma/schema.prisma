@@ -1,0 +1,774 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextIndex", "fullTextSearch", "metrics", "multiSchema", "nativeDistinct", "tracing", "views", "relationJoins", "typedSql", "strictUndefinedChecks"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model achievement_media {
+  id                      BigInt                   @id @default(autoincrement()) @db.UnsignedBigInt
+  achievement_id          BigInt                   @db.UnsignedBigInt
+  name                    String                   @unique(map: "idx_achievement_media_name_unique") @db.VarChar(255)
+  added_by                BigInt?                  @db.UnsignedBigInt
+  created_at              DateTime                 @default(now()) @db.Timestamp(0)
+  updated_at              DateTime?                @db.Timestamp(0)
+  deleted_at              DateTime?                @db.Timestamp(0)
+  achievements            achievements             @relation(fields: [achievement_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "achievement_media_ibfk_1")
+  users                   users?                   @relation(fields: [added_by], references: [id], onUpdate: NoAction, map: "achievement_media_ibfk_2")
+  achievement_media_blobs achievement_media_blobs?
+
+  @@index([achievement_id], map: "achievement_media_ibfk_1")
+  @@index([added_by], map: "achievement_media_ibfk_2")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model achievement_votes {
+  id             BigInt       @id @default(autoincrement()) @db.UnsignedBigInt
+  achievement_id BigInt       @db.UnsignedBigInt
+  voter_id       BigInt       @db.UnsignedBigInt
+  created_at     DateTime     @default(now()) @db.Timestamp(0)
+  updated_at     DateTime?    @db.Timestamp(0)
+  deleted_at     DateTime?    @db.Timestamp(0)
+  achievements   achievements @relation(fields: [achievement_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "achievement_votes_ibfk_1")
+  users          users        @relation(fields: [voter_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "achievement_votes_ibfk_2")
+
+  @@index([achievement_id], map: "achievement_votes_ibfk_1")
+  @@index([voter_id], map: "achievement_votes_ibfk_2")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model achievements {
+  id                                 BigInt              @id @default(autoincrement()) @db.UnsignedBigInt
+  activity_id                        BigInt              @db.UnsignedBigInt
+  user_id                            BigInt              @db.UnsignedBigInt
+  description                        String              @db.Text
+  added_by                           BigInt?             @db.UnsignedBigInt
+  created_at                         DateTime            @default(now()) @db.Timestamp(0)
+  updated_at                         DateTime?           @db.Timestamp(0)
+  deleted_at                         DateTime?           @db.Timestamp(0)
+  achievement_media                  achievement_media[]
+  achievement_votes                  achievement_votes[]
+  activities                         activities          @relation(fields: [activity_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "achievements_ibfk_1")
+  users_achievements_user_idTousers  users               @relation("achievements_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "achievements_ibfk_2")
+  users_achievements_added_byTousers users?              @relation("achievements_added_byTousers", fields: [added_by], references: [id], onUpdate: NoAction, map: "achievements_ibfk_3")
+
+  @@index([activity_id], map: "achievements_ibfk_1")
+  @@index([user_id], map: "achievements_ibfk_2")
+  @@index([added_by], map: "achievements_ibfk_3")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model activities {
+  id                     BigInt                   @id @default(autoincrement()) @db.UnsignedBigInt
+  title                  String                   @db.VarChar(255)
+  sub_title              String?                  @db.VarChar(255)
+  description            String?                  @db.Text
+  activity_type_id       BigInt                   @db.UnsignedBigInt
+  location               String                   @db.VarChar(255)
+  max_participants       Int?
+  rules                  String?                  @db.Text
+  age_group              activities_age_group?    @default(age_19_24)
+  contact_info           String?                  @db.VarChar(255)
+  url                    String?                  @db.VarChar(255)
+  is_event               Boolean
+  is_sponsored           Boolean                  @default(false)
+  voting_cutoff_interval Int?                     @default(6)
+  voting_cycle_duration  Int?                     @default(1440)
+  vote_processed_at      DateTime?                @db.Timestamp(0)
+  is_active              Boolean                  @default(true)
+  added_by               BigInt                   @db.UnsignedBigInt
+  start_time             DateTime                 @default(now()) @db.Timestamp(0)
+  end_time               DateTime?                @db.Timestamp(0)
+  created_at             DateTime                 @default(now()) @db.Timestamp(0)
+  updated_at             DateTime?                @db.Timestamp(0)
+  deleted_at             DateTime?                @db.Timestamp(0)
+  voting_cycle_count     Int?                     @default(0)
+  achievements           achievements[]
+  ref_activity_types     ref_activity_types       @relation(fields: [activity_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "activities_ibfk_1")
+  users                  users                    @relation(fields: [added_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "activities_ibfk_2")
+  activity_actions       activity_actions[]
+  activity_comments      activity_comments[]
+  activity_join_requests activity_join_requests[]
+  activity_likes         activity_likes[]
+  activity_media         activity_media[]
+  activity_members       activity_members[]
+  messages               messages[]
+  socket_log             socket_log[]
+
+  @@index([activity_type_id], map: "activity_type_id")
+  @@index([added_by], map: "added_by")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model activity_actions {
+  id               BigInt           @id @default(autoincrement()) @db.UnsignedBigInt
+  activity_id      BigInt           @db.UnsignedBigInt
+  user_id          BigInt           @db.UnsignedBigInt
+  action_type_id   BigInt           @db.UnsignedBigInt
+  action_time      DateTime         @default(now()) @db.Timestamp(0)
+  created_at       DateTime         @default(now()) @db.Timestamp(0)
+  updated_at       DateTime?        @db.Timestamp(0)
+  deleted_at       DateTime?        @db.Timestamp(0)
+  activities       activities       @relation(fields: [activity_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "activity_actions_ibfk_1")
+  users            users            @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "activity_actions_ibfk_2")
+  ref_action_types ref_action_types @relation(fields: [action_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "activity_actions_ibfk_3")
+
+  @@index([action_type_id], map: "action_type_id")
+  @@index([activity_id], map: "activity_id")
+  @@index([user_id], map: "user_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model activity_comments {
+  id          BigInt     @id @default(autoincrement()) @db.UnsignedBigInt
+  activity_id BigInt     @db.UnsignedBigInt
+  comment     String     @db.Text
+  rating      Int?
+  added_by    BigInt     @db.UnsignedBigInt
+  created_at  DateTime   @default(now()) @db.Timestamp(0)
+  updated_at  DateTime?  @db.Timestamp(0)
+  deleted_at  DateTime?  @db.Timestamp(0)
+  activities  activities @relation(fields: [activity_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "activity_comments_ibfk_1")
+  users       users      @relation(fields: [added_by], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "activity_comments_ibfk_2")
+
+  @@index([activity_id], map: "activity_id")
+  @@index([added_by], map: "added_by")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model activity_join_requests {
+  id                                           BigInt                         @id @default(autoincrement()) @db.UnsignedBigInt
+  activity_id                                  BigInt                         @db.UnsignedBigInt
+  user_id                                      BigInt                         @db.UnsignedBigInt
+  added_by                                     BigInt?                        @db.UnsignedBigInt
+  created_at                                   DateTime                       @default(now()) @db.Timestamp(0)
+  status                                       activity_join_requests_status? @default(pending)
+  comments                                     String?                        @db.VarChar(255)
+  updated_at                                   DateTime?                      @db.Timestamp(0)
+  deleted_at                                   DateTime?                      @db.Timestamp(0)
+  vote_cycle_count                             Int?                           @default(0)
+  activities                                   activities                     @relation(fields: [activity_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "activity_join_requests_ibfk_1")
+  users                                        users                          @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "activity_join_requests_ibfk_2")
+  users_activity_join_requests_added_byTousers users?                         @relation("activity_join_requests_added_byTousers", fields: [added_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "activity_join_requests_ibfk_3")
+  votes                                        votes[]
+
+  @@unique([activity_id, user_id], map: "unique_activity_user")
+  @@unique([activity_id, user_id], map: "unique_request_user_activity")
+  @@index([user_id], map: "user_id")
+  @@index([added_by], map: "added_by")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model activity_likes {
+  id           BigInt     @id @default(autoincrement()) @db.UnsignedBigInt
+  activity_id  BigInt     @db.UnsignedBigInt
+  like_dislike Boolean
+  added_by     BigInt     @db.UnsignedBigInt
+  created_at   DateTime   @default(now()) @db.Timestamp(0)
+  updated_at   DateTime?  @db.Timestamp(0)
+  deleted_at   DateTime?  @db.Timestamp(0)
+  activities   activities @relation(fields: [activity_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "activity_likes_ibfk_1")
+  users        users      @relation(fields: [added_by], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "activity_likes_ibfk_2")
+
+  @@index([activity_id], map: "activity_id")
+  @@index([added_by], map: "added_by")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model activity_logs {
+  id          BigInt                    @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id     BigInt                    @db.UnsignedBigInt
+  action_type activity_logs_action_type
+  table_name  String                    @db.VarChar(255)
+  record_type String                    @db.VarChar(255)
+  record_id   BigInt                    @db.UnsignedBigInt
+  new_values  String?                   @db.LongText
+  created_at  DateTime                  @default(now()) @db.Timestamp(0)
+  users       users                     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "activity_logs_ibfk_1")
+
+  @@index([user_id], map: "user_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model activity_media {
+  id                   BigInt                @id @default(autoincrement()) @db.UnsignedBigInt
+  activity_id          BigInt                @db.UnsignedBigInt
+  name                 String                @unique(map: "idx_activity_media_name_unique") @db.VarChar(255)
+  created_at           DateTime              @default(now()) @db.Timestamp(0)
+  updated_at           DateTime?             @db.Timestamp(0)
+  deleted_at           DateTime?             @db.Timestamp(0)
+  activities           activities            @relation(fields: [activity_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "activity_media_ibfk_1")
+  activity_media_blobs activity_media_blobs?
+
+  @@index([activity_id], map: "activity_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model activity_members {
+  id                                     BigInt     @id @default(autoincrement()) @db.UnsignedBigInt
+  activity_id                            BigInt     @db.UnsignedBigInt
+  user_id                                BigInt     @db.UnsignedBigInt
+  added_by                               BigInt?    @db.UnsignedBigInt
+  created_at                             DateTime   @default(now()) @db.Timestamp(0)
+  updated_at                             DateTime?  @db.Timestamp(0)
+  deleted_at                             DateTime?  @db.Timestamp(0)
+  activities                             activities @relation(fields: [activity_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "activity_members_ibfk_1")
+  users_activity_members_user_idTousers  users      @relation("activity_members_user_idTousers", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "activity_members_ibfk_2")
+  users_activity_members_added_byTousers users?     @relation("activity_members_added_byTousers", fields: [added_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "activity_members_ibfk_4")
+
+  @@unique([activity_id, user_id], map: "unique_activity_user")
+  @@index([added_by], map: "added_by")
+  @@index([user_id], map: "user_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model message_media {
+  id                  BigInt               @id @default(autoincrement()) @db.UnsignedBigInt
+  message_id          BigInt               @db.UnsignedBigInt
+  name                String               @unique(map: "idx_message_media_name_unique") @db.VarChar(255)
+  created_at          DateTime             @default(now()) @db.Timestamp(0)
+  updated_at          DateTime?            @db.Timestamp(0)
+  deleted_at          DateTime?            @db.Timestamp(0)
+  messages            messages             @relation(fields: [message_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "message_media_ibfk_1")
+  message_media_blobs message_media_blobs?
+
+  @@index([message_id], map: "message_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model messages {
+  id            BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  activity_id   BigInt          @db.UnsignedBigInt
+  added_by      BigInt          @db.UnsignedBigInt
+  message       String          @db.Text
+  created_at    DateTime        @default(now()) @db.Timestamp(0)
+  updated_at    DateTime?       @db.Timestamp(0)
+  deleted_at    DateTime?       @db.Timestamp(0)
+  message_media message_media[]
+  activities    activities      @relation(fields: [activity_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "messages_ibfk_1")
+  users         users           @relation(fields: [added_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "messages_ibfk_2")
+
+  @@index([activity_id], map: "activity_id")
+  @@index([added_by], map: "sender_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model ref_action_types {
+  id               BigInt             @id @default(autoincrement()) @db.UnsignedBigInt
+  name             String             @db.VarChar(255)
+  created_at       DateTime           @default(now()) @db.Timestamp(0)
+  updated_at       DateTime?          @db.Timestamp(0)
+  deleted_at       DateTime?          @db.Timestamp(0)
+  activity_actions activity_actions[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model ref_activity_types {
+  id         BigInt       @id @default(autoincrement()) @db.UnsignedBigInt
+  name       String       @db.VarChar(255)
+  created_at DateTime     @default(now()) @db.Timestamp(0)
+  updated_at DateTime?    @db.Timestamp(0)
+  deleted_at DateTime?    @db.Timestamp(0)
+  activities activities[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model ref_notification_types {
+  id            BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  name          String          @db.VarChar(255)
+  created_at    DateTime        @default(now()) @db.Timestamp(0)
+  updated_at    DateTime?       @db.Timestamp(0)
+  deleted_at    DateTime?       @db.Timestamp(0)
+  notifications notifications[]
+}
+
+model users {
+  id                                                            BigInt                   @id @default(autoincrement()) @db.UnsignedBigInt
+  name                                                          String?                  @db.VarChar(255)
+  email                                                         String                   @unique(map: "email") @db.VarChar(255)
+  emailVerified                                                 DateTime?                @db.DateTime(0)
+  password                                                      String                   @db.VarChar(255)
+  profile_picture                                               String?                  @unique(map: "idx_profile_picture_unique") @db.VarChar(255)
+  location                                                      String?                  @db.VarChar(255)
+  fitness_interests                                             String?                  @db.Text
+  experience_level                                              users_experience_level?
+  is_active                                                     Boolean?                 @default(true)
+  age_group                                                     users_age_group?
+  username                                                      String?                  @unique(map: "username_unique") @db.VarChar(255)
+  role                                                          users_role?              @default(user)
+  about_me                                                      String?                  @db.Text
+  last_active_at                                                DateTime?                @db.Timestamp(0)
+  created_at                                                    DateTime                 @default(now()) @db.Timestamp(0)
+  updated_at                                                    DateTime?                @db.Timestamp(0)
+  deleted_at                                                    DateTime?                @db.Timestamp(0)
+  account                                                       account[]
+  achievement_media                                             achievement_media[]
+  achievement_votes                                             achievement_votes[]
+  achievements_achievements_user_idTousers                      achievements[]           @relation("achievements_user_idTousers")
+  achievements_achievements_added_byTousers                     achievements[]           @relation("achievements_added_byTousers")
+  activities                                                    activities[]
+  activity_actions                                              activity_actions[]
+  activity_comments                                             activity_comments[]
+  activity_join_requests                                        activity_join_requests[]
+  activity_join_requests_activity_join_requests_added_byTousers activity_join_requests[] @relation("activity_join_requests_added_byTousers")
+  activity_likes                                                activity_likes[]
+  activity_logs                                                 activity_logs[]
+  activity_members_activity_members_user_idTousers              activity_members[]       @relation("activity_members_user_idTousers")
+  activity_members_activity_members_added_byTousers             activity_members[]       @relation("activity_members_added_byTousers")
+  messages                                                      messages[]
+  password_reset_tokens                                         password_reset_tokens[]
+  session                                                       session[]
+  socket_log                                                    socket_log[]
+  user_followers_user_followers_follower_idTousers              user_followers[]         @relation("user_followers_follower_idTousers")
+  user_followers_user_followers_followee_idTousers              user_followers[]         @relation("user_followers_followee_idTousers")
+  user_surveys                                                  user_survey[]
+  users_blobs                                                   users_blobs?
+  users_fcm_tokens                                              users_fcm_tokens[]
+  votes                                                         votes[]
+}
+
+model users_fcm_tokens {
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id     BigInt    @db.UnsignedBigInt
+  fcm_token   String    @db.VarChar(255)
+  device_info String?   @db.VarChar(255)
+  created_at  DateTime  @default(now()) @db.Timestamp(0)
+  updated_at  DateTime? @db.Timestamp(0)
+  deleted_at  DateTime? @db.Timestamp(0)
+  users       users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "users_fcm_tokens_ibfk_1")
+
+  @@index([user_id], map: "user_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model votes {
+  id                     BigInt                 @id @default(autoincrement()) @db.UnsignedBigInt
+  request_id             BigInt                 @db.UnsignedBigInt
+  voter_id               BigInt                 @db.UnsignedBigInt
+  vote_type              votes_vote_type?       @default(approve)
+  created_at             DateTime               @default(now()) @db.Timestamp(0)
+  updated_at             DateTime?              @db.Timestamp(0)
+  deleted_at             DateTime?              @db.Timestamp(0)
+  activity_join_requests activity_join_requests @relation(fields: [request_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "votes_ibfk_1")
+  users                  users                  @relation(fields: [voter_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "votes_ibfk_3")
+
+  @@unique([request_id, voter_id, vote_type], map: "unique_vote_request")
+  @@index([voter_id], map: "voter_id")
+}
+
+model achievement_media_blobs {
+  achievement_media_id BigInt            @id @db.UnsignedBigInt
+  image_blob           Bytes?            @db.Blob
+  achievement_media    achievement_media @relation(fields: [achievement_media_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "achievement_media_blobs_ibfk_1")
+}
+
+model activity_media_blobs {
+  activity_media_id BigInt         @id @db.UnsignedBigInt
+  image_blob        Bytes?         @db.Blob
+  activity_media    activity_media @relation(fields: [activity_media_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "activity_media_blobs_ibfk_1")
+}
+
+model message_media_blobs {
+  message_media_id BigInt        @id @db.UnsignedBigInt
+  image_blob       Bytes?        @db.Blob
+  message_media    message_media @relation(fields: [message_media_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "message_media_blobs_ibfk_1")
+}
+
+model users_blobs {
+  user_id    BigInt @id @db.UnsignedBigInt
+  image_blob Bytes? @db.Blob
+  users      users  @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "users_blobs_ibfk_1")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model user_followers {
+  id                                      BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  follower_id                             BigInt    @db.UnsignedBigInt
+  followee_id                             BigInt    @db.UnsignedBigInt
+  created_at                              DateTime  @default(now()) @db.Timestamp(0)
+  updated_at                              DateTime? @db.Timestamp(0)
+  deleted_at                              DateTime? @db.Timestamp(0)
+  users_user_followers_follower_idTousers users     @relation("user_followers_follower_idTousers", fields: [follower_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "user_followers_ibfk_1")
+  users_user_followers_followee_idTousers users     @relation("user_followers_followee_idTousers", fields: [followee_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "user_followers_ibfk_2")
+
+  @@unique([follower_id, followee_id], map: "unique_follower_followee")
+  @@index([followee_id], map: "followee_id")
+  @@index([follower_id], map: "follower_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model socket_log {
+  id              BigInt            @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id         BigInt            @db.UnsignedBigInt
+  activity_id     BigInt?           @db.UnsignedBigInt
+  socket_id       String            @unique(map: "socket_id") @db.VarChar(255)
+  active_rooms    String?           @db.Text
+  log             String?           @db.Text
+  status          socket_log_status @default(active)
+  connected_at    DateTime          @default(now()) @db.Timestamp(0)
+  disconnected_at DateTime?         @db.Timestamp(0)
+  users           users             @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "socket_log_ibfk_1")
+  activities      activities?       @relation(fields: [activity_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "socket_log_ibfk_2")
+
+  @@unique([user_id, activity_id, status], map: "unique_active_connection")
+  @@index([activity_id], map: "socket_log_ibfk_2")
+}
+
+model password_reset_tokens {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id    BigInt    @db.UnsignedBigInt
+  token      String    @db.VarChar(6)
+  expires_at DateTime  @default(now()) @db.Timestamp(0)
+  created_at DateTime  @default(now()) @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([token])
+}
+
+model user_survey {
+  id          BigInt           @id @default(autoincrement()) @db.UnsignedBigInt
+  survey_type survey_type_enum @default(account_deletion)
+  user_id     BigInt           @db.UnsignedBigInt
+  reason      String?          @db.LongText
+  comments    String?          @db.Text
+  created_at  DateTime         @default(now()) @db.Timestamp(0)
+  updated_at  DateTime?        @db.Timestamp(0)
+  deleted_at  DateTime?        @db.Timestamp(0)
+  users       users            @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+}
+
+model notifications {
+  id                     BigInt                  @id @default(autoincrement()) @db.UnsignedBigInt
+  recipient_id           BigInt                  @db.UnsignedBigInt
+  recipient_type         String                  @db.VarChar(32)
+  triggerer_id           BigInt                  @db.UnsignedBigInt
+  triggerer_type         String                  @db.VarChar(32)
+  notification_type      String                  @db.VarChar(50)
+  notification_key       String?                 @db.VarChar(255)
+  metadata               String?                 @db.LongText
+  media_thumbnail        String?                 @db.VarChar(255)
+  action_url             String?                 @db.VarChar(2048)
+  priority               Int?                    @db.TinyInt
+  read_at                DateTime?               @db.Timestamp(0)
+  aggregation_key        String?                 @db.VarChar(255)
+  is_summary             Int?                    @db.TinyInt
+  superseded_by_id       BigInt?                 @db.UnsignedBigInt
+  created_at             DateTime                @default(now()) @db.Timestamp(0)
+  updated_at             DateTime?               @db.Timestamp(0)
+  deleted_at             DateTime?               @db.Timestamp(0)
+  notification_type_id   BigInt?                 @db.UnsignedBigInt
+  ref_notification_types ref_notification_types? @relation(fields: [notification_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "notifications_ibfk_1")
+
+  @@index([triggerer_id, triggerer_type, deleted_at], map: "idx_triggerer_active")
+  @@index([notification_type, notification_key, deleted_at], map: "idx_type_key_active")
+  @@index([notification_type_id], map: "notifications_ibfk_1")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model account {
+  id                       String    @id @db.VarChar(255)
+  userId                   BigInt    @db.UnsignedBigInt
+  type                     String    @db.VarChar(255)
+  provider                 String    @db.VarChar(255)
+  providerAccountId        String    @db.VarChar(255)
+  refresh_token            String?   @db.Text
+  access_token             String?   @db.Text
+  expires_at               Int?
+  token_type               String?   @db.VarChar(255)
+  scope                    String?   @db.VarChar(255)
+  id_token                 String?   @db.Text
+  session_state            String?   @db.VarChar(255)
+  refresh_token_expires_in Int?
+  createdAt                DateTime  @default(now()) @db.DateTime(0)
+  updatedAt                DateTime? @db.DateTime(0)
+  users                    users     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_account_user")
+
+  @@unique([provider, providerAccountId], map: "provider_providerAccountId_unique")
+  @@index([userId], map: "userId_idx")
+}
+
+model contact_submission {
+  id                       Int                        @id @default(autoincrement())
+  fullName                 String
+  relatedHelp              String
+  email                    String
+  phoneNumber              String
+  message                  String
+  createdAt                DateTime                   @default(now())
+  contact_submission_media contact_submission_media[]
+}
+
+model contact_submission_media {
+  id                  Int                @id @default(autoincrement())
+  name                String
+  image_blob          Bytes
+  contactSubmissionId Int
+  createdAt           DateTime           @default(now())
+  contact_submission  contact_submission @relation(fields: [contactSubmissionId], references: [id], map: "ContactSubmissionMedia_contactSubmissionId_fkey")
+
+  @@index([contactSubmissionId], map: "ContactSubmissionMedia_contactSubmissionId_fkey")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model session {
+  id           String    @id @db.VarChar(255)
+  sessionToken String    @unique(map: "sessionToken") @db.VarChar(255)
+  userId       BigInt    @db.UnsignedBigInt
+  expires      DateTime  @db.DateTime(0)
+  createdAt    DateTime  @default(now()) @db.DateTime(0)
+  updatedAt    DateTime? @db.DateTime(0)
+  users        users     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_session_user")
+
+  @@index([userId], map: "userId_idx")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model verification_token {
+  identifier String   @db.VarChar(255)
+  token      String   @db.VarChar(255)
+  expires    DateTime @db.DateTime(0)
+
+  @@id([identifier, token])
+  @@unique([identifier, token], map: "identifier_token_unique")
+}
+
+model slider {
+  id           BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  category     String?       @db.VarChar(255)
+  subcategory  String?       @db.VarChar(255)
+  title        String        @db.VarChar(255)
+  description  String?       @db.Text
+  image        String        @db.VarChar(255)
+  created_at   DateTime      @default(now()) @db.Timestamp(0)
+  updated_at   DateTime?     @db.Timestamp(0)
+  deleted_at   DateTime?     @db.Timestamp(0)
+  slider_blobs slider_blobs?
+
+  @@index([category])
+  @@index([deleted_at])
+}
+
+model products {
+  id            BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  userId        BigInt          @db.UnsignedBigInt
+  name          String?         @db.VarChar(255)
+  description   String?         @db.Text
+  price         Decimal         @db.Decimal(10, 2)
+  is_home       Int?            @db.TinyInt
+  is_active     Int?            @db.TinyInt
+  created_at    DateTime        @default(now()) @db.Timestamp(0)
+  updated_at    DateTime?       @db.Timestamp(0)
+  deleted_at    DateTime?       @db.Timestamp(0)
+  product_media product_media[]
+  course_materials course_materials[]
+}
+
+model product_media {
+  id                  BigInt               @id @default(autoincrement()) @db.UnsignedBigInt
+  product_id          BigInt               @db.UnsignedBigInt
+  name                String               @unique(map: "idx_activity_media_name_unique") @db.VarChar(255)
+  created_at          DateTime             @default(now()) @db.Timestamp(0)
+  updated_at          DateTime?            @db.Timestamp(0)
+  deleted_at          DateTime?            @db.Timestamp(0)
+  products            products             @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "product_media_ibfk_1")
+  product_media_blobs product_media_blobs?
+
+  @@index([product_id], map: "product_id")
+}
+
+model product_media_blobs {
+  product_media_id BigInt        @id @db.UnsignedBigInt
+  image_blob       Bytes?        @db.Blob
+  video_blob       Bytes?
+  pdf_blob         Bytes?        @db.Blob
+  other_blob       Bytes?         @db.Blob
+  product_media    product_media @relation(fields: [product_media_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "product_media_blobs_ibfk_1")
+}
+
+model slider_blobs {
+  slider_id  BigInt @id @db.UnsignedBigInt
+  image_blob Bytes? @db.MediumBlob
+  slider     slider @relation(fields: [slider_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "slider_blobs_ibfk_1")
+}
+model course_materials {
+  id         BigInt     @id @default(autoincrement()) @db.UnsignedBigInt
+  product_id BigInt     @db.UnsignedBigInt
+  name       String     @unique(map: "idx_activity_media_name_unique") @db.VarChar(255)
+  created_at DateTime   @default(now()) @db.Timestamp(0)
+  updated_at DateTime?  @db.Timestamp(0)
+  deleted_at DateTime?  @db.Timestamp(0)
+
+  products    products    @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "course_materials_ibfk_1")
+
+  @@index([product_id], map: "product_id")
+}
+
+model users_product {
+  user_id                 BigInt @id @db.UnsignedBigInt
+  total_product           Int?
+  total_product_remaining Int?
+}
+
+model plan_order_details {
+  id             Int      @id @default(autoincrement())
+  user_id        BigInt
+  plan_id      BigInt
+  amount      Decimal  @db.Decimal(10, 2)
+  payment_status     Int?            @db.TinyInt
+  order_status   Int?            @db.TinyInt
+  created_at     DateTime        @default(now()) @db.Timestamp(0)
+  updated_at     DateTime?       @db.Timestamp(0)
+  deleted_at    DateTime?       @db.Timestamp(0)
+}
+model billing_details {
+  id         Int      @id @default(autoincrement())
+  user_id    BigInt
+  first_name String
+  last_name  String
+  email      String
+  phone      String
+  city       String
+  zip        String
+  address    String
+  created_at DateTime @default(now())
+}
+
+model preferences {
+  id            BigInt   @id @default(autoincrement())
+  user_id       BigInt
+  pref_keyword  String   @db.VarChar(255)
+  pref_location String   @db.VarChar(255)
+  pref_data     DateTime @db.DateTime(0)
+  get_post      Int      @default(0)
+  get_events    Int      @default(0)
+}
+model order_details {
+  id             Int      @id @default(autoincrement())
+  user_id        BigInt
+  vendor_id      BigInt
+  product_id     BigInt
+  price          Decimal  @db.Decimal(10, 2)
+  payment_status String   @db.VarChar(1)
+  order_status   String   @db.VarChar(1)
+  created_on     DateTime @default(now())
+}
+
+model order_messages {
+  id         Int       @id @default(autoincrement())
+  order_id   Int
+  added_by   Int
+  message    String
+  created_at DateTime  @default(now())
+  updated_at DateTime?
+  deleted_at DateTime?
+}
+
+model order_message_blob {
+  id               Int    @id @default(autoincrement())
+  order_message_id Int
+  message_blob     Bytes  @db.Blob
+  name             String @default("file_unknown.pdf") @db.VarChar(255)
+}
+model post_payment {
+  id         BigInt      @id @default(autoincrement())
+  activityId BigInt
+  userId     BigInt
+  amount     Decimal  @db.Decimal(10, 2)
+  payment_status Int?      @db.TinyInt
+  created_at  DateTime @default(now())
+}
+/// The underlying view does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+/// This view or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+view activity_comments_likes_view {
+  activity_id               BigInt    @default(0) @db.UnsignedBigInt
+  commenter_name            String?   @db.VarChar(255)
+  commenter_profile_picture String?   @db.VarChar(255)
+  comment                   String?   @db.Text
+  rating                    Int?
+  comment_created_at        DateTime? @default(now()) @db.Timestamp(0)
+  total_likes               BigInt?
+  total_dislikes            BigInt?
+  admin_id                  BigInt    @db.UnsignedBigInt
+  admin_name                String?   @db.VarChar(255)
+  admin_profile_picture     String?   @db.VarChar(255)
+
+  @@ignore
+}
+
+enum activity_logs_action_type {
+  Created
+  Updated
+  Deleted
+  Joined
+  Left
+  Voted
+  Posted
+  Reached
+  Verified
+  Achieved
+}
+
+enum users_experience_level {
+  Beginner
+  Intermediate
+  Advanced
+}
+
+enum users_age_group {
+  age_13_18 @map("age_13-18")
+  age_19_24 @map("age_19-24")
+  age_25_30 @map("age_25-30")
+  age_31_40 @map("age_31-40")
+  age_41_50 @map("age_41-50")
+  age_51_60 @map("age_51-60")
+}
+
+enum users_role {
+  user
+  super_admin
+  activity_admin
+  content_moderator
+  data_analyst
+  support_agent
+}
+
+enum activities_age_group {
+  age_13_18 @map("age_13-18")
+  age_19_24 @map("age_19-24")
+  age_25_30 @map("age_25-30")
+  age_31_40 @map("age_31-40")
+  age_41_50 @map("age_41-50")
+  age_51_60 @map("age_51-60")
+}
+
+enum votes_vote_type {
+  approve
+  ignore
+}
+
+enum activity_join_requests_status {
+  pending
+  voting
+  invited
+  accepted
+  rejected
+}
+
+enum socket_log_status {
+  active
+  inactive
+}
+
+enum survey_type_enum {
+  account_deletion
+}

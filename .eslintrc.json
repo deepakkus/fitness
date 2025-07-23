@@ -1,0 +1,39 @@
+{
+  "extends": ["next/core-web-vitals", "next/typescript"],
+  "rules": {
+    // Allow the use of 'any' type
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-empty-object-type": "warn",
+
+    // Allow variables that are defined but not used
+    "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+
+    // Allow functions and variables to be used before they are defined
+    "no-use-before-define": "off",
+    "@typescript-eslint/no-use-before-define": "warn",
+
+    // Disable the prefer-const rule
+    "prefer-const": "off",
+
+    // Turn off the rule for missing React display names
+    "react/display-name": "off",
+
+    // Disable the rule for missing alt attributes on images
+    "jsx-a11y/alt-text": "off",
+
+    // Allow empty interfaces
+    "@typescript-eslint/no-empty-interface": "off",
+
+    // Disable the rule for unescaped entities in JSX
+    "react/no-unescaped-entities": "off",
+
+    // Disable the rule for passing children as props
+    "react/no-children-prop": "off",
+
+    // Disable the rule for undefined components in JSX
+    "react/jsx-no-undef": "off",
+
+    // Disable the rule for exhaustive dependencies in React hooks
+    "react-hooks/exhaustive-deps": "off"
+  }
+}
