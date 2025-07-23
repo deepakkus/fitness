@@ -95,7 +95,7 @@ export default function VendorProfileBanner({ userData }: { userData: UserData }
       try {
         const res = await axios.get('/api/users_product/me');
         setProductPlan(res.data);
-      } catch (e) {
+      } catch () {
         setProductPlan(null);
       } finally {
         setPlanLoading(false);
@@ -130,7 +130,9 @@ export default function VendorProfileBanner({ userData }: { userData: UserData }
         if (result.error) {
           setError(result.error.message || 'Payment failed');
           setLoading(false);
-          onError && onError(result.error.message || 'Payment failed');
+          if (onError) {
+				onError(result.error.message || 'Payment failed');
+			}
         } else if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
           setLoading(false);
           onSuccess && onSuccess();
