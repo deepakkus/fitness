@@ -135,7 +135,9 @@ export default function VendorProfileBanner({ userData }: { userData: UserData }
 			}
         } else if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
           setLoading(false);
-          onSuccess && onSuccess();
+          if (onSuccess) {
+			  onSuccess();
+			}
         }
       } catch (err: any) {
         setError('Payment failed. Please try again.');
