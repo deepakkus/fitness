@@ -126,12 +126,12 @@ export async function POST(request: NextRequest, { params }: { params: { orderId
       } catch (err) {
         console.error('[OrderMessages API] ERROR: Could not fetch order_details model:', err);
       }
-      console.log('[OrderMessages API] Order details for notification:', order);
+      
       
       if (order) {
         // Determine who should receive the notification
         const recipientId = order.user_id === BigInt(userId) ? order.vendor_id : order.user_id;
-        console.log('[OrderMessages API] Notification recipientId:', recipientId, 'Sender userId:', userId);
+        
         
         if (recipientId) {
           // Create notification
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest, { params }: { params: { orderId
           } catch (notifErr) {
             console.error('[OrderMessages API] ERROR: Could not create notification:', notifErr);
           }
-          console.log('[OrderMessages API] Notification created:', notif);
+          
         } else {
           console.log('[OrderMessages API] No valid recipientId for notification');
         }
