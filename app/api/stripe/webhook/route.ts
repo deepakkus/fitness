@@ -19,7 +19,7 @@ const smtpOptions = {
 const SMTP_FROM = process.env.SMTP_FROM;
 const transporter = nodemailer.createTransport(smtpOptions);
 
-export const config = {
+export const routeSegmentConfig  = {
   api: {
     bodyParser: false,
   },
