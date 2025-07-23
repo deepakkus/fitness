@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
 import crypto from "crypto";
-const { getIO } = require("../../../../lib/socket-io");
+import { getIO } from "@/lib/socket-io";
 
 export async function GET(request: NextRequest, { params }: { params: { orderId: string } }) {
   const orderId = parseInt(params.orderId);
