@@ -1,30 +1,24 @@
-// lib/prisma.ts
 import { PrismaClient } from "@prisma/client";
+//import { PrismaClient } from "@/prisma/prisma-client";
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+// interface BigInt {
+//   /** Convert to BigInt to string form in JSON.stringify */
+//   toJSON: () => string;
+// }
 
-let prisma: PrismaClient;
+(BigInt.prototype as any).toJSON = function () {
+  return this.toString();
+};
+// PrismaClient is attached to the `global` object in development to prevent
+// exhausting your database connection limit.
+//
+// Learn more:
+// https://pris.ly/d/help/next-js-best-practices
 
-if (process.env.DISABLE_DB !== "true") {
-  const globalForPrisma = globalThis as unknown as {
-    prisma?: PrismaClient;
-  };
+const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
-  prisma = globalForPrisma.prisma ?? new PrismaClient();
+export const prisma = globalForPrisma.prisma || new PrismaClient();
 
-  if (process.env.NODE_ENV !== "production") {
-    globalForPrisma.prisma = prisma;
-  }
-} else {
-  // Create a dummy proxy that throws when accessed
-  const handler = {
-    get() {
-      throw new Error(
-        " DISABLE_DB is true — attempted to use Prisma client when DB is disabled"
-      );
-    },
-  };
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
-  prisma = new Proxy({}, handler) as any as PrismaClient;
-}
-
-//  Ensure default export works everywhere
 export default prisma;
