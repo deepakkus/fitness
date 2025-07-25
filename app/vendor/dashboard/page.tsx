@@ -8,8 +8,9 @@ export default async function Sales({ searchParams }: { searchParams?: Record<st
   // Forward cookies for authentication
   const cookieStore = cookies();
   const cookieHeader = cookieStore.toString();
-
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/user/me`, {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `https://${process.env.VERCEL_URL}`;
+  
+  const res = await fetch(`${baseUrl}/api/user/me`, {
     cache: "no-store",
     headers: {
       cookie: cookieHeader,
