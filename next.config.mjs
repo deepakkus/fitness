@@ -33,7 +33,7 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '**.vercel.app',
+        hostname: process.env.VERCEL_URL,
         pathname: '/api/images/**',
       },
     ],
