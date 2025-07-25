@@ -18,7 +18,7 @@ export async function POST(request: NextRequest){
 
   try{
     const data = await request.json();
-    logger.info(`Received data for creating product: ${JSON.stringify(data)}`);
+    //logger.info(`Received data for creating product: ${JSON.stringify(data)}`);
 
     // Destructure the incoming data
     const {
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest){
         return product;
     });
 
-    logger.info(`Product created successfully: ${JSON.stringify(newProduct)}`);
+    //logger.info(`Product created successfully: ${JSON.stringify(newProduct)}`);
     return NextResponse.json({ message: "Product created successfully", product: newProduct });
   }
   catch (error) {
