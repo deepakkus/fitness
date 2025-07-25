@@ -30,7 +30,7 @@ export default async function Sales({ searchParams }: { searchParams?: Record<st
     : searchParams?.orderId ?? null;
 
   // Fetch initial products (first page)
-  const productsRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/products/active?limit=10&offset=0`, {
+  const productsRes = await fetch(`${baseUrl}/api/products/active?limit=10&offset=0`, {
     cache: "no-store",
     headers: { cookie: cookieHeader },
   });
