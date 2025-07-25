@@ -37,6 +37,7 @@ const nextConfig = {
         pathname: '/api/images/**',
       },
     ],
+	unoptimized: true
   },
 };
 
