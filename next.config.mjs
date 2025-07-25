@@ -33,7 +33,7 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: fitness-theta-beryl.vercel.app,
+        hostname: 'fitness-theta-beryl.vercel.app',
         pathname: '/api/images/**',
       },
     ],
