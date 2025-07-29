@@ -18,17 +18,14 @@ export async function POST(req: NextRequest) {
     //const user_id = parseInt(session.user.id, 10);
     const user_id = BigInt(token.user.id);
     const { keywords, location, date, get_post, get_events } = await req.json();
-    let isoDate: string | undefined = undefined;
-    if (date) {
-      isoDate = new Date(date).toISOString();
-    }
+    const isoDate = new Date(date || new Date()).toISOString();
     let updateData: any = {
       pref_keyword: keywords,
       pref_location: location,
       get_post: get_post ?? 0,
       get_events: get_events ?? 0,
     };
-    if (isoDate) updateData.pref_data = isoDate;
+    updateData.pref_data = isoDate;
     let createData: any = {
       user_id: user_id,
       pref_keyword: keywords,
@@ -36,7 +33,7 @@ export async function POST(req: NextRequest) {
       get_post: get_post ?? 0,
       get_events: get_events ?? 0,
     };
-    if (isoDate) createData.pref_data = isoDate;
+    createData.pref_data = isoDate;
     let pref;
     const existing = await prisma.preferences.findFirst({ where: { user_id } });
     if (existing) {
