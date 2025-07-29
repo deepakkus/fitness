@@ -1023,7 +1023,7 @@ const validateImage = (file: File): ValidationError | null => {
     if (!cardElement) return;
 
     setIsProcessing(true);
-
+	console.log('fname--' +billingDetails.firstName);
     // Save billing details if not already saved
     if (!billingExists) {
       try {
