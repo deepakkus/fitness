@@ -24,6 +24,7 @@ export async function POST(request: NextRequest) {
       description,
       activity_type_id,
       location,
+	  is_sponsored,
       start_time,
       end_time,
       rules,
@@ -64,6 +65,7 @@ export async function POST(request: NextRequest) {
         contact_info,
         url,
         is_event: true, // For posts, set this to false
+		is_sponsored: is_sponsored === true || is_sponsored === '1' || is_sponsored === 1,
         added_by: user_id, // Set to the logged-in user
       },
     });
