@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
   }
   const user_id = BigInt(token.user.id);
   const data = await request.json();
-
+	console.log('fname=='+data.firstName)
   try {
     const billing = await prisma.billing_details.create({
       data: {
