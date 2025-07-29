@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     orderBy: { created_at: 'desc' }
   });
 
-  if (!billing) {
+  /*if (!billing) {
     // Auto-create a new row with empty/default values
     billing = await prisma.billing_details.create({
       data: {
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
       },
     });
   }
-
+*/
   return NextResponse.json({ data: billing });
 }
 
