@@ -240,10 +240,10 @@ export default function LandingClient({ activityData, activeProducts }: { activi
                             <Box as="span" bg="green.400" color="white" px={4} py={1} borderRadius="md" fontWeight="bold" fontSize="lg" mr={4}>
                                 Products
                             </Box>
-                            <Select width="200px" value={productSort} onChange={e => setProductSort(e.target.value as 'newest' | 'oldest')} aria-label="Sort products">
+                            {/*<Select width="200px" value={productSort} onChange={e => setProductSort(e.target.value as 'newest' | 'oldest')} aria-label="Sort products">
                                 <option value="newest">Newest</option>
                                 <option value="oldest">Oldest</option>
-                            </Select>
+                            </Select>*/}
                         </Box>
                         <SimpleGrid templateColumns={{ base: "repeat(1, 1fr)", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)", lg: "repeat(4, 1fr)" }} gap={6} mt={4}>
                             {products.length === 0 ? (
