@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const data = await request.json();
-    logger.info(`Received data for creating post: ${JSON.stringify(data)}`);
+    //logger.info(`Received data for creating post: ${JSON.stringify(data)}`);
     // Destructure the incoming data
     const {
       title,
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
         added_by: user_id, // Set to the logged-in user
       },
     });
-    logger.info(`Post created successfully: ${JSON.stringify(newPost)}`);
+    //logger.info(`Post created successfully: ${JSON.stringify(newPost)}`);
    // Check if the user is already a member of this activity
    const existingMember = await prisma.activity_members.findUnique({
     where: {
