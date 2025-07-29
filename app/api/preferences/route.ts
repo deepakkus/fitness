@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
       get_events: get_events ?? 0,
 	  pref_data: prefDate,
     };
-    
+    console.log("CreateData:", createData);
     let pref;
     const existing = await prisma.preferences.findFirst({ where: { user_id } });
     if (existing) {
