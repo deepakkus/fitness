@@ -1028,10 +1028,10 @@ const validateImage = (file: File): ValidationError | null => {
     if (!billingExists) {
       try {
         await axios.post('/api/billing-details', {
-          firstName: billingDetails.firstName,
-          lastName: billingDetails.lastName,
-          emailAddress: billingDetails.email,
-          phoneNumber: billingDetails.phone,
+          first_name: billingDetails.firstName,
+          last_name: billingDetails.lastName,
+          email: billingDetails.email,
+          phone: billingDetails.phone,
           city: billingDetails.city,
           zip: billingDetails.zip,
           address: billingDetails.address,
