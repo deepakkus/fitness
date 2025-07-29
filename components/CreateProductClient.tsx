@@ -1677,7 +1677,7 @@ const DocumentUploaderHandleDelete = (index: number) => {
                     >
                       <Flex color="#0F172A" fontSize="20px" fontWeight="700" alignItems="center">
                         <Text>Price:</Text>
-                        <Text color="#F9690E" ml="2" fontSize="35px">${productFormData.price}</Text>
+                        <Text color="#F9690E" ml="2" fontSize="35px">${parseFloat(productFormData.price).toFixed(2)}</Text>
                       </Flex>
                     </Box>
                     {websiteLinks.length > 0 &&(
