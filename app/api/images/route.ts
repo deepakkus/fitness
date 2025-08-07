@@ -314,14 +314,18 @@ else if (videoList && videoList.length > 0) {
 
       return NextResponse.json({ success: true, filePath }, { status: 201 });
     } else if (imageList) {
+      console.log("imageList received:", imageList.length, "product_id:", product_id);
       // Convert all images to Buffer concurrently
       const imageBlobList = await Promise.all(imageList.map((image) => processImageToBlob(image, targetSize)));
       // Assume at least one successful image update
       let atLeastOneUpdated = false;
 
-      for (const imageBlob of imageBlobList) {
-        if (!imageBlob || imageBlob.length > 65535) continue; // Skip invalid or oversized images
-
+      for (const [i, imageBlob] of imageBlobList.entries()) {
+        if (!imageBlob || imageBlob.length > 65535) {
+          console.log("Skipping image at index", i, "blob valid?", !!imageBlob, "size:", imageBlob && imageBlob.length);
+          continue; // Skip invalid or oversized images
+        }
+        console.log("Processing image at index", i, "for product", product_id);
         // Generate unique filename using nanoid and bucket name as an identifier
         const extension = "avif";
         const filename = `${nanoid(10)}.${extension}`;
@@ -379,6 +383,21 @@ else if (videoList && videoList.length > 0) {
                 image_blob: imageBlob,
               },
             });
+          } else if (bucket_name === "products") {
+            const newProductMedia = await prisma.product_media.create({
+              data: {
+                name: filePath,
+                product_id: parseInt(`${product_id}`),
+              },
+              select: { id: true },
+            });
+            await prisma.product_media_blobs.create({
+              data: {
+                product_media_id: newProductMedia.id,
+                image_blob: imageBlob,
+              },
+            });
+            console.log("Saved image at index", i, "with filePath", filePath);
           } else if (bucket_name === "messages") {
             // message_id is required
 
@@ -400,7 +419,7 @@ else if (videoList && videoList.length > 0) {
           }
           atLeastOneUpdated = true; // Mark as successful if we store at least one image
         } catch (error) {
-          console.error(`Error processing image ${filename}:`, error);
+          console.error("Error processing image", filename, error);
           continue; // Continue processing remaining images if there's an error with one
         }
       }
