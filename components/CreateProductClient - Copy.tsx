@@ -515,8 +515,6 @@ export default function CreateProduct() {
                   imageFormData.append("imagelist", image); // Use "imagelist" key for multiple files
                 });
               }
-              // Debug: log FormData keys
-              console.log("FormData keys:", Array.from(imageFormData.keys()));
               imageFormData.append("bucket_name", "products");
               imageFormData.append("product_id", product_id);
               try {
@@ -529,18 +527,6 @@ export default function CreateProduct() {
                   throw new Error(`Image upload failed`);
                 }
                 if (imgResponse.ok) {
-                  let updatedProductRes;
-                  if (accessToken) {
-                    updatedProductRes = await axios.get(`/api/products/${product_id}`, { withCredentials: true, headers: { "Authorization": `Bearer ${accessToken}` } });
-                  } else {
-                    updatedProductRes = await axios.get(`/api/products/${product_id}`, { withCredentials: true });
-                  }
-                  const updatedProduct = updatedProductRes.data.product;
-                  setProductFormData(prev => ({
-                    ...prev,
-                    images: [],
-                    imagesLink: (updatedProduct && Array.isArray(updatedProduct.images)) ? updatedProduct.images : [],
-                  }));
                 }
               } catch (error) {
                 console.error("Error uploading image", error);
@@ -644,17 +630,11 @@ export default function CreateProduct() {
                 // Only set Authorization header, do NOT set Content-Type
                 const docHeaders = accessToken ? { "Authorization": `Bearer ${accessToken}` } : {};
                 try {
-                  let fetchOptions = {
+                  const response = await fetch(`/api/products/${product_id}/documents`, {
                     method: "POST",
                     body: docFormData,
-                  };
-                  if (accessToken) {
-                    fetchOptions = {
-                      ...fetchOptions,
-                      headers: { "Authorization": `Bearer ${accessToken}` },
-                    };
-                  }
-                  const response = await fetch(`/api/products/${product_id}/documents`, fetchOptions);
+                    headers: docHeaders, // Do NOT set Content-Type here
+                  });
                   const data = await response.json();
                   if (response.ok && data && data.mediaId) {
                     if (data.name && data.name !== doc.name) {
