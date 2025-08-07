@@ -1109,14 +1109,17 @@ export default function ProductDetailsPage() {
              
 
                 {Array.isArray(productData?.images) && productData.images.length > 0 ? (
-                  <Image
-                    src={productData.images[slider]?.url || "/placeholder.png"}
-                    w="full"
-                    h="full"
-                    maxH={"400px"}
-                    objectFit="cover"
-                    alt="Image"
-                  />
+                  productData.images.map((img, idx) => (
+                    <Image
+                      key={img.id || idx}
+                      src={img.url || "/placeholder.png"}
+                      w="full"
+                      h="full"
+                      maxH={"400px"}
+                      objectFit="cover"
+                      alt={`Image ${idx + 1}`}
+                    />
+                  ))
                 ) : (
                   <Image
                     src="/placeholder.png"
