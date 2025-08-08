@@ -993,31 +993,6 @@ export default function ProductDetailsPage() {
     return totalRating / memoizedCommentData.length;
   }, [memoizedCommentData]);
 
-  const [purchasedProducts, setPurchasedProducts] = useState<string[]>([]); // Store purchased product IDs
-  const [purchasedLoading, setPurchasedLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchPurchasedProducts = async () => {
-      if (!session) {
-        setPurchasedProducts([]);
-        setPurchasedLoading(false);
-        return;
-      }
-      try {
-        const res = await axios.get('/api/order-details/user', { withCredentials: true });
-        const orders = res.data?.data || [];
-        // Extract product IDs from orders
-        const productIds = orders.map((order: any) => String(order.product_id));
-        setPurchasedProducts(productIds);
-      } catch (err) {
-        setPurchasedProducts([]);
-      } finally {
-        setPurchasedLoading(false);
-      }
-    };
-    fetchPurchasedProducts();
-  }, [session]);
-
   // Early return for loading state (after all hooks)
   if (isLoading) {
     return <ProductDetailsSkeleton />;
@@ -1641,27 +1616,26 @@ export default function ProductDetailsPage() {
                 </Text>
               </Box>
             </RWebShare>
-            {/* Add To Cart Button - only show if not purchased */}
-            {(!purchasedLoading && !purchasedProducts.includes(String(productData?.id))) && (
-              <Button
-                py="5px"
-                px="30px"
-                fontSize="16px"
-                fontWeight="500"
-                display="inline-flex"
-                alignItems="center"
-                justifyContent="center"
-                bgColor="#3182ce"
-                borderRadius="3px"
-                color="white"
-                _hover={{ bgColor: "#2563eb" }}
-                position="relative"
-                height="36px"
-                onClick={handleAddToCart}
-              >
-                Add To Cart
-              </Button>
-            )}
+              
+            {/* Add To Cart Button */}
+            <Button
+              py="5px"
+              px="30px"
+              fontSize="16px"
+              fontWeight="500"
+              display="inline-flex"
+              alignItems="center"
+              justifyContent="center"
+              bgColor="#3182ce"
+              borderRadius="3px"
+              color="white"
+              _hover={{ bgColor: "#2563eb" }}
+              position="relative"
+              height="36px"
+              onClick={handleAddToCart}
+            >
+              Add To Cart
+            </Button>
             {/* Buy Product Button */}
             <Button
               py="5px"
