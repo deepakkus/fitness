@@ -20,6 +20,7 @@ import { useSocket } from "@/app/socket";
 import axios from "axios";
 import OrderIcon from "@/components/Icons/OrderIcon";
 import VendorIcon from "@/components/Icons/VendorIcon";
+import PostEventIcon from "@/components/Icons/PostEventIcon";
 
 interface Notification {
   id: string;
