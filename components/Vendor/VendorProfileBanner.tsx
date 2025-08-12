@@ -368,6 +368,21 @@ export default function VendorProfileBanner({ userData }: { userData: UserData }
 				<Text mb={4} textAlign="center" color="gray.600" fontSize="md">
 					5 Products – $5
 				</Text>
+				<Text mb={4} textAlign="center" color="gray.600" fontSize="md">
+					Allows you to add up to 5 products. After adding 5 products, the plan will expire.
+				</Text>
+				<Text mb={4} textAlign="center" color="gray.600" fontSize="md">
+					10 Products – $8
+				</Text>
+				<Text mb={4} textAlign="center" color="gray.600" fontSize="md">
+					Allows you to add up to 10 products. After adding 10 products, the plan will expire.
+				</Text>
+				<Text mb={4} textAlign="center" color="gray.600" fontSize="md">
+					15 Products – $12
+				</Text>
+				<Text mb={4} textAlign="center" color="gray.600" fontSize="md">
+					Allows you to add up to 15 products. After adding 15 products, the plan will expire.
+				</Text>
                 <ChakraStack spacing={4} align="center">
                   {plans.map((plan) => (
                     <Button
