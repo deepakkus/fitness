@@ -365,7 +365,9 @@ export default function VendorProfileBanner({ userData }: { userData: UserData }
                 <Text mb={4} textAlign="center" color="gray.600" fontSize="md">
                   Our product plans are based on the number of product listings you purchase. Once all product slots in your plan are used, the plan will expire, and a new plan must be purchased to continue adding products.
                 </Text>
-
+				<ChakraText mb={4} textAlign="center" color="gray.600" fontSize="md">
+					5 Products – $5
+				</ChakraText>
                 <ChakraStack spacing={4} align="center">
                   {plans.map((plan) => (
                     <Button
