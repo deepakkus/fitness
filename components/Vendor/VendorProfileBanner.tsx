@@ -130,21 +130,15 @@ export default function VendorProfileBanner({ userData }: { userData: UserData }
         if (result.error) {
           setError(result.error.message || 'Payment failed');
           setLoading(false);
-          if (onError) {
-			onError(result.error.message || 'Payment failed');
-			}
+          onError && onError(result.error.message || 'Payment failed');
         } else if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
           setLoading(false);
-          if (onSuccess) {
-			  onSuccess();
-			}
+          onSuccess && onSuccess();
         }
       } catch (err: any) {
         setError('Payment failed. Please try again.');
         setLoading(false);
-		if (onError) {
-        onError('Payment failed. Please try again.');
-		}
+        onError && onError('Payment failed. Please try again.');
       }
     };
 
@@ -418,13 +412,15 @@ export default function VendorProfileBanner({ userData }: { userData: UserData }
       <AchievementModal isOpen={isModalOpen} onClose={handleCloseModal} />{" "}
       {/* Render the modal */}
       {/* Plan Selection Modal */}
-      <Modal isOpen={showPlanModal} onClose={() => setShowPlanModal(false)} isCentered size="md">
+      <Modal isOpen={showPlanModal} onClose={() => setShowPlanModal(false)} isCentered size="lg">
         <ModalOverlay />
         <ModalContent
           borderRadius="lg"
           boxShadow="xl"
           p={2}
-          {...(modalStep === 'payment' ? { maxW: '700px', w: '100%' } : {})}
+          maxW="800px"
+          w="90%"
+          {...(modalStep === 'payment' ? { maxW: '900px', w: '95%' } : {})}
         >
           <ModalHeader textAlign="center" fontWeight="bold" fontSize="2xl" color="orange.500" letterSpacing="wide">
             {modalStep === 'plan' && 'Select a Product Plan'}
@@ -436,6 +432,30 @@ export default function VendorProfileBanner({ userData }: { userData: UserData }
               <>
                 <ChakraText mb={4} textAlign="center" color="gray.600" fontSize="md">
                   Choose a plan to upload your products:
+                </ChakraText>
+                <ChakraText mb={2} textAlign="center" color="gray.600" fontSize="md">
+                  Our product plans are based on the number of product listings you purchase. 
+                  Once all product slots in your plan are used, the plan will expire, 
+                  and a new plan must be purchased to continue adding products.
+                </ChakraText>
+                <ChakraText mb={2} textAlign="center" color="gray.600" fontSize="md">
+                  5 Products – $5 
+                  
+                </ChakraText>
+                <ChakraText mb={2} textAlign="center" color="gray.600" fontSize="md">
+                  Allows you to add up to 5 products. After adding 5 products, the plan will expire.
+                </ChakraText>
+                <ChakraText mb={2} textAlign="center" color="gray.600" fontSize="md">
+                  10 Products – $8 
+                </ChakraText>
+                <ChakraText mb={2} textAlign="center" color="gray.600" fontSize="md">
+                  Allows you to add up to 10 products. After adding 10 products, the plan will expire.
+                </ChakraText>
+                <ChakraText mb={2} textAlign="center" color="gray.600" fontSize="md">
+                  15 Products – $12 
+                </ChakraText>
+                <ChakraText mb={2} textAlign="center" color="gray.600" fontSize="md">
+                  Allows you to add up to 15 products. After adding 15 products, the plan will expire.
                 </ChakraText>
                 <ChakraStack spacing={4} align="center">
                   {plans.map((plan) => (
