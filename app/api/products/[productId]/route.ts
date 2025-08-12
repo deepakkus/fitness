@@ -99,6 +99,7 @@ export async function GET(request: NextRequest, { params }: { params: { productI
         name: true,
         description: true,
         price: true,
+        userId: true,
         created_at: true,
         updated_at: true,
         product_media: {
