@@ -412,15 +412,13 @@ export default function VendorProfileBanner({ userData }: { userData: UserData }
       <AchievementModal isOpen={isModalOpen} onClose={handleCloseModal} />{" "}
       {/* Render the modal */}
       {/* Plan Selection Modal */}
-      <Modal isOpen={showPlanModal} onClose={() => setShowPlanModal(false)} isCentered size="lg">
+      <Modal isOpen={showPlanModal} onClose={() => setShowPlanModal(false)} isCentered size="md">
         <ModalOverlay />
         <ModalContent
           borderRadius="lg"
           boxShadow="xl"
           p={2}
-          maxW="800px"
-          w="90%"
-          {...(modalStep === 'payment' ? { maxW: '900px', w: '95%' } : {})}
+          {...(modalStep === 'payment' ? { maxW: '700px', w: '100%' } : {})}
         >
           <ModalHeader textAlign="center" fontWeight="bold" fontSize="2xl" color="orange.500" letterSpacing="wide">
             {modalStep === 'plan' && 'Select a Product Plan'}
@@ -455,7 +453,7 @@ export default function VendorProfileBanner({ userData }: { userData: UserData }
                   15 Products – $12 
                 </ChakraText>
                 <ChakraText mb={2} textAlign="center" color="gray.600" fontSize="md">
-                  Allows you to add up to 15 products. After adding 15 products, the plan will expire.
+                  Allows you to add up to 15 products. After adding 5 products, the plan will expire.
                 </ChakraText>
                 <ChakraStack spacing={4} align="center">
                   {plans.map((plan) => (
