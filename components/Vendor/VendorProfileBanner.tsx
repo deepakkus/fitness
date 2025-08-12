@@ -431,30 +431,12 @@ export default function VendorProfileBanner({ userData }: { userData: UserData }
                 <ChakraText mb={4} textAlign="center" color="gray.600" fontSize="md">
                   Choose a plan to upload your products:
                 </ChakraText>
-                <ChakraText mb={2} textAlign="center" color="gray.600" fontSize="md">
+                <ChakraText mb={4} textAlign="center" color="gray.600" fontSize="md">
                   Our product plans are based on the number of product listings you purchase. 
                   Once all product slots in your plan are used, the plan will expire, 
                   and a new plan must be purchased to continue adding products.
                 </ChakraText>
-                <ChakraText mb={2} textAlign="center" color="gray.600" fontSize="md">
-                  5 Products – $5 
-                  
-                </ChakraText>
-                <ChakraText mb={2} textAlign="center" color="gray.600" fontSize="md">
-                  Allows you to add up to 5 products. After adding 5 products, the plan will expire.
-                </ChakraText>
-                <ChakraText mb={2} textAlign="center" color="gray.600" fontSize="md">
-                  10 Products – $8 
-                </ChakraText>
-                <ChakraText mb={2} textAlign="center" color="gray.600" fontSize="md">
-                  Allows you to add up to 10 products. After adding 10 products, the plan will expire.
-                </ChakraText>
-                <ChakraText mb={2} textAlign="center" color="gray.600" fontSize="md">
-                  15 Products – $12 
-                </ChakraText>
-                <ChakraText mb={2} textAlign="center" color="gray.600" fontSize="md">
-                  Allows you to add up to 15 products. After adding 5 products, the plan will expire.
-                </ChakraText>
+                
                 <ChakraStack spacing={4} align="center">
                   {plans.map((plan) => (
                     <ChakraButton
