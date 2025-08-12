@@ -444,6 +444,27 @@ export default function Navbar() {
                 </Box>
               </Link>
             )}
+			{session && (
+              <Link href="/profile/me">
+                <Box
+                  fontWeight="500"
+                  fontSize={{ base: "0px", lg: "16px" }}
+                  px={{ md: "5px", lg: "10px" }}
+                  _hover={{ bgColor: "#F7FAFC" }}
+                  py={{ base: "5px", lg: "10px" }}
+                  display="flex"
+                  justifyContent="center"
+                  flexDir="column"
+                  alignItems="center"
+                  color={pathname === "/profile/me" ? "#f9690e" : "#64748B"}
+                  position={pathname === "/profile/me" ? "relative" : "static"}
+                  h="100%"
+                >
+                  <PostEventIcon height="22px" width="22px" stroke={pathname === "/profile/me" ? "#f9690e" : "#64748B"} />
+                  <Text display={{ base: "none", lg: "block" }}>Post/Event</Text>
+                </Box>
+              </Link>
+            )}
           </Flex>
              
           {!session && (
