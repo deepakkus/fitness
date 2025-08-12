@@ -117,7 +117,7 @@ export default function CartPage() {
                 <Text fontWeight="bold">Total</Text>
                 <Text fontWeight="bold" fontSize="xl">${subtotal.toFixed(2)}</Text>
               </HStack>
-              <Button colorScheme="gray" size="lg" mt={4} onClick={handleCheckout}>
+              <Button colorScheme="orange" size="lg" mt={4} onClick={handleCheckout}>
                 Proceed to checkout
               </Button>
             </VStack>
