@@ -72,6 +72,7 @@ export interface ProductData {
   name: string;
   description: string;
   price: number;
+  userId?: string;
   images?: { url: string }[];
   videos?: { url: string }[];
   course_materials?: { name: string }[];
@@ -1022,6 +1023,9 @@ export default function ProductDetailsPage() {
 
   // Whether current user has purchased this product
   const hasPurchasedCurrentProduct = !purchasedLoading && purchasedProducts.includes(String(productData?.id));
+  
+  // Whether current user is the vendor (creator) of this product
+  const isCurrentUserVendor = session?.user?.id && productData?.userId && session.user.id === String(productData.userId);
 
   // Early return for loading state (after all hooks)
   if (isLoading) {
@@ -1298,19 +1302,20 @@ export default function ProductDetailsPage() {
                     {productData.pdfs.map((pdf: { name: string; mediaId: string }, idx: number) => (
                       <ListItem key={idx}>
                         {hasPurchasedCurrentProduct ? (
-					  <a
-                          href={`/api/products/${productData.id}/media/${pdf.mediaId}/pdf`}
-                          style={{ color: '#E53E3E', wordBreak: 'break-all', fontWeight: 500 }}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          {pdf.name.split('/').pop()}
-                        </a>
-						):(
-							<span style={{ color: '#1f2937', wordBreak: 'break-all', fontWeight: 500 }}>
+                          <a
+                            href={`/api/products/${productData.id}/media/${pdf.mediaId}/pdf`}
+                            style={{ color: '#E53E3E', wordBreak: 'break-all', fontWeight: 500 }}
+                            download={pdf.name.split('/').pop()}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {pdf.name.split('/').pop()}
+                          </a>
+                        ) : (
+                          <span style={{ color: '#1f2937', wordBreak: 'break-all', fontWeight: 500 }}>
                             {pdf.name.split('/').pop()}
                           </span>
-						)}
+                        )}
                       </ListItem>
                     ))}
                   </OrderedList>
@@ -1329,6 +1334,7 @@ export default function ProductDetailsPage() {
                           <a
                             href={`/api/products/${productData.id}/media/${doc.mediaId}/document`}
                             style={{ color: '#3182ce', wordBreak: 'break-all', fontWeight: 500 }}
+                            download={doc.name.split('/').pop()}
                             target="_blank"
                             rel="noopener noreferrer"
                           >
@@ -1387,184 +1393,7 @@ export default function ProductDetailsPage() {
           </Box>
         </Box>
 
-        {/* <Box px={{ base: "20px", md: "30px" }} py={"30px"} ref={commentsRef}>
-          <Box>
-            <Text
-              mb={"20px"}
-              fontSize={"24px"}
-              color={"#1E293B"}
-              fontWeight={"700"}
-            >
-              Rating and feedback ({commentData?.length ? commentData?.length : 0}
-              )
-            </Text>
-
-            {session && isMember ? ( // Conditionally render the comment input section
-              // Replace the existing comment form section with this:
-              hasAlreadyCommented ? (
-                <Text
-                  mb={"30px"}
-                  fontSize={"16px"}
-                  color="#4A5568"
-                  fontWeight="medium"
-                  p="4"
-                  bg="gray.50"
-                  borderRadius="md"
-                >
-                  You have already provided feedback for this event. Thank you for
-                  your contribution!
-                </Text>
-              ) : (
-                <Box
-                  display={"flex"}
-                  alignItems={"flex-start"}
-                  justifyContent={"flex-start"}
-                  gap="16px"
-                  mb={"30px"}
-                >
-                  <Image
-                    src={
-                      userData?.profile_pic
-                        ? userData?.profile_pic
-                        : "/account.png"
-                    }
-                    w={"48px"}
-                    h={"48px"}
-                    borderRadius={"50%"}
-                    objectFit={"cover"}
-                  />
-                  <Box display={"flex"} flexDir={"column"} w="full" gap={"16px"}>
-                    <Box display={"flex"} alignItems={"center"} gap="8px">
-                      {Array.from({ length: 5 }).map((_, i) => {
-                        return (
-                          <StarIcon
-                            key={i}
-                            width="22px"
-                            height="22px"
-                            fill={
-                              i < newCommentData.rating ? "#f9690e" : "#CBD5E1"
-                            }
-                            onClick={() => {
-                              setNewCommentData({
-                                ...newCommentData,
-                                rating: i + 1,
-                              });
-                            }}
-                            cursor="pointer"
-                          />
-                        );
-                      })}
-                    </Box>
-                    <Textarea
-                      placeholder="Write your feedback..."
-                      w={"full"}
-                      maxWidth={"600px"}
-                      outline={"1px solid #CBD5E1"}
-                      borderRadius={"3px"}
-                      h={"85px"}
-                      bgColor={"#FFF"}
-                      onChange={(e) => {
-                        setNewCommentData({
-                          ...newCommentData,
-                          comment: e.target.value,
-                        });
-                      }}
-                      value={newCommentData.comment}
-                    />
-
-                    <Box w={"auto"}>
-                      <Box
-                        as="button"
-                        py={"8px"}
-                        px="20px"
-                        display={"inline-block"}
-                        bgColor={"#f9690e"}
-                        borderRadius={"3px"}
-                        color={"#FFF"}
-                        onClick={handleSubmitComment}
-                      >
-                        Comment
-                      </Box>
-                    </Box>
-                  </Box>
-                </Box>
-              )
-            ) : (
-              <Flex
-                justifyContent="flex-start"
-                alignItems="center"
-                gap={4}
-                mb={"30px"}
-              >
-                <Text color="gray.500">
-                  Join the activity to add your comment.
-                </Text>
-              </Flex>
-            )}
-            <Box
-              mb="40px"
-              display={"flex"}
-              alignItems={"center"}
-              gap="30px"
-              justifyContent={"flex-start"}
-            >
-              <Box display={"flex"} flexDir={"column"}>
-                <Box display={"flex"} alignItems={"center"} gap="18px">
-                  <Text fontSize={"57px"} color="#334155">
-                    {memoizedCommentRating.toFixed(1)}
-                  </Text>
-                  <Text fontSize={"14px"} color="#64748B">
-                    Avg <span style={{ display: "block" }}>Rating</span>
-                  </Text>
-                </Box>
-                <Box display={"flex"} alignItems={"center"} gap="8px">
-                  {Array.from({ length: 5 }).map((_, i) => {
-                    return (
-                      <StarIcon
-                        key={i}
-                        width="22px"
-                        height="22px"
-                        fill="#CBD5E1"
-                      />
-                    );
-                  })}
-                </Box>
-              </Box>
-              <Box display={"flex"} flexDir={"column"} w="full">
-                {[5, 4, 3, 2, 1].map(
-                  (
-                    rating //Rating Progress Bars
-                  ) => (
-                    <Box
-                      display={"flex"}
-                      alignItems={"center"}
-                      gap="10px"
-                      key={rating}
-                    >
-                      <Text color={"#64748B"}>{rating}</Text>
-                      <Progress
-                        height={"6px"}
-                        value={getPercentage(rating)}
-                        w={"full"}
-                        borderRadius={99}
-                        colorScheme={ratingColorScheme(rating)} // Function to dynamically assign color
-                        maxWidth={"300px"}
-                      />
-                      <Text color={"#64748B"}>({memoizedRatingCounts[rating]})</Text>
-                    </Box>
-                  )
-                )}
-              </Box>
-            </Box>
-            <Box display={"flex"} flexDir={"column"} gap={"30px"} mb={"60px"}>
-              {memoizedCommentData &&
-                memoizedCommentData?.length > 0 &&
-                memoizedCommentData.map((commentItem, i) => {
-                  return <UserComment key={i} commentItem={commentItem} />;
-                })}
-            </Box>
-          </Box>
-        </Box> */}
+       
 
       </Box>
       {/* Add this at the bottom of your event section, before the closing Box component */}
@@ -1658,8 +1487,9 @@ export default function ProductDetailsPage() {
                 </Text>
               </Box>
             </RWebShare>
-            {/* Add To Cart Button - only show if not purchased */}
-            {(!purchasedLoading && !purchasedProducts.includes(String(productData?.id))) && (
+            {/* Add To Cart Button - only show if not purchased and not vendor */}
+            {/* {(!purchasedLoading && !purchasedProducts.includes(String(productData?.id)) && !isCurrentUserVendor) && ( */}
+              {( !isCurrentUserVendor) && (
               <Button
                 py="5px"
                 px="30px"
@@ -1678,26 +1508,31 @@ export default function ProductDetailsPage() {
               >
                 Add To Cart
               </Button>
+
+              
             )}
-            {/* Buy Product Button */}
-            <Button
-              py="5px"
-              px="30px"
-              fontSize="16px"
-              fontWeight="500"
-              display="inline-flex"
-              alignItems="center"
-              justifyContent="center"
-              bgColor={buttonLoading ? "#D1D5DB" : "#f9690e"}
-              borderRadius="3px"
-              color="white"
-              _hover={buttonLoading ? {} : { bgColor: "#DD6B20" }}
-              position="relative"
-              height="36px"
-              onClick={handleProduct}
-            >
-              Buy Product
-            </Button>
+
+            {/* Buy Product Button - only show if not vendor */}
+            {!isCurrentUserVendor && (
+              <Button
+                py="5px"
+                px="30px"
+                fontSize="16px"
+                fontWeight="500"
+                display="inline-flex"
+                alignItems="center"
+                justifyContent="center"
+                bgColor={buttonLoading ? "#D1D5DB" : "#f9690e"}
+                borderRadius="3px"
+                color="white"
+                _hover={buttonLoading ? {} : { bgColor: "#DD6B20" }}
+                position="relative"
+                height="36px"
+                onClick={handleProduct}
+              >
+                Buy Product
+              </Button>
+            )}
           </Box>
         </Box>
       </Box>
