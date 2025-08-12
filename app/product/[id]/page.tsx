@@ -1006,8 +1006,10 @@ export default function ProductDetailsPage() {
       try {
         const res = await axios.get('/api/order-details/user', { withCredentials: true });
         const orders = res.data?.data || [];
-        // Extract product IDs from orders
-        const productIds = orders.map((order: any) => String(order.product_id));
+        // Consider only orders placed by the user (not vendor)
+        const customerOrders = orders.filter((order: any) => order.user_role === 'customer');
+        // Extract product IDs from customer orders
+        const productIds = customerOrders.map((order: any) => String(order.product_id));
         setPurchasedProducts(productIds);
       } catch (err) {
         setPurchasedProducts([]);
@@ -1017,6 +1019,9 @@ export default function ProductDetailsPage() {
     };
     fetchPurchasedProducts();
   }, [session]);
+
+  // Whether current user has purchased this product
+  const hasPurchasedCurrentProduct = !purchasedLoading && purchasedProducts.includes(String(productData?.id));
 
   // Early return for loading state (after all hooks)
   if (isLoading) {
@@ -1049,7 +1054,7 @@ export default function ProductDetailsPage() {
     //   tries++;
     // }
 
-    localStorage.setItem("buyNowProductId", productData?.id);
+    localStorage.setItem("buyNowProductId", String(productData?.id ?? ""));
     router.push("/product/order");
     //router.push("/product/order");
   };
@@ -1136,7 +1141,7 @@ export default function ProductDetailsPage() {
                 {Array.isArray(productData?.images) && productData.images.length > 0 ? (
                   productData.images.map((img, idx) => (
                     <Image
-                      key={img.id || idx}
+                      key={idx}
                       src={img.url || "/placeholder.png"}
                       w="full"
                       h="full"
@@ -1292,7 +1297,8 @@ export default function ProductDetailsPage() {
                   <OrderedList spacing={2}>
                     {productData.pdfs.map((pdf: { name: string; mediaId: string }, idx: number) => (
                       <ListItem key={idx}>
-                        <a
+                        {hasPurchasedCurrentProduct ? (
+					  <a
                           href={`/api/products/${productData.id}/media/${pdf.mediaId}/pdf`}
                           style={{ color: '#E53E3E', wordBreak: 'break-all', fontWeight: 500 }}
                           target="_blank"
@@ -1300,6 +1306,11 @@ export default function ProductDetailsPage() {
                         >
                           {pdf.name.split('/').pop()}
                         </a>
+						):(
+							<span style={{ color: '#1f2937', wordBreak: 'break-all', fontWeight: 500 }}>
+                            {pdf.name.split('/').pop()}
+                          </span>
+						)}
                       </ListItem>
                     ))}
                   </OrderedList>
@@ -1314,14 +1325,20 @@ export default function ProductDetailsPage() {
                   <OrderedList spacing={2}>
                     {productData.documents.map((doc: { name: string; mediaId: string }, idx: number) => (
                       <ListItem key={idx}>
-                        <a
-                          href={`/api/products/${productData.id}/media/${doc.mediaId}/document`}
-                          style={{ color: '#3182ce', wordBreak: 'break-all', fontWeight: 500 }}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          {doc.name.split('/').pop()}
-                        </a>
+                        {hasPurchasedCurrentProduct ? (
+                          <a
+                            href={`/api/products/${productData.id}/media/${doc.mediaId}/document`}
+                            style={{ color: '#3182ce', wordBreak: 'break-all', fontWeight: 500 }}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {doc.name.split('/').pop()}
+                          </a>
+                        ) : (
+                          <span style={{ color: '#1f2937', wordBreak: 'break-all', fontWeight: 500 }}>
+                            {doc.name.split('/').pop()}
+                          </span>
+                        )}
                       </ListItem>
                     ))}
                   </OrderedList>
@@ -1348,17 +1365,17 @@ export default function ProductDetailsPage() {
                 <OrderedList spacing={2} px="20px">
                   {productData.course_materials.map((material: { name: string }, idx: number) => (
                     <ListItem key={idx}>
-                      {material.name.startsWith('http') ? (
+                      {material.name.startsWith('http') && hasPurchasedCurrentProduct ? (
                         <a
                           href={material.name}
-                          style={{ color: "#3182ce", wordBreak: "break-all" }}
+                          style={{ color: "#3182ce", wordBreak: "break-all", fontWeight: 500 }}
                           target="_blank"
                           rel="noopener noreferrer"
                         >
                           {material.name}
                         </a>
                       ) : (
-                        material.name
+                        <span style={{ color: "#1f2937", wordBreak: "break-all" }}>{material.name}</span>
                       )}
                     </ListItem>
                   ))}

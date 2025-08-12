@@ -380,13 +380,10 @@ export default function CreateProduct() {
 
    const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
+    // Only add to local pdfs list to avoid duplicate rendering; backend links remain in pdfsLink
     setProductFormData(prev => ({
       ...prev,
       pdfs: [...prev.pdfs, ...files],
-      pdfsLink: [
-        ...prev.pdfsLink,
-        ...files.map(file => ({ name: file.name, mediaId: `local-${file.name}-${Date.now()}` }))
-      ],
     }));
   };
 
@@ -644,7 +641,7 @@ export default function CreateProduct() {
                 // Only set Authorization header, do NOT set Content-Type
                 const docHeaders = accessToken ? { "Authorization": `Bearer ${accessToken}` } : {};
                 try {
-                  let fetchOptions = {
+                  let fetchOptions: RequestInit = {
                     method: "POST",
                     body: docFormData,
                   };
