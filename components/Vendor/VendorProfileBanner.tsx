@@ -348,9 +348,9 @@ export default function VendorProfileBanner({ userData }: { userData: UserData }
       <AchievementModal isOpen={isModalOpen} onClose={handleCloseModal} />
 
       {/* Plan Selection Modal (includes the section you highlighted in the screenshot) */}
-      <Modal isOpen={showPlanModal} onClose={() => setShowPlanModal(false)} isCentered size="md">
+      <Modal isOpen={showPlanModal} onClose={() => setShowPlanModal(false)} isCentered size="xl">
         <ModalOverlay />
-        <ModalContent borderRadius="lg" boxShadow="xl" p={2} {...(modalStep === "payment" ? { maxW: "700px", w: "100%" } : {})}>
+        <ModalContent borderRadius="lg" boxShadow="xl" p={2} {...(modalStep === "payment" ? { maxW: "800px", w: "100%" } : {})}>
           <ModalHeader textAlign="center" fontWeight="bold" fontSize="2xl" color="orange.500" letterSpacing="wide">
             {modalStep === "plan" && "Select a Product Plan"}
             {modalStep === "payment" && "Complete Payment"}
