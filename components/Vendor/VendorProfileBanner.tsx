@@ -3,7 +3,7 @@
 import {
   Box,
   Button,
-  Text,
+  Text as ChakraText,
   useToast,
   Modal,
   ModalOverlay,
@@ -15,6 +15,8 @@ import {
   Spinner,
   Center,
 } from "@chakra-ui/react";
+
+
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import axios from "axios";
