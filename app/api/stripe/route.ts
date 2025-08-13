@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
           day: 'numeric',
         });
 
-    if (SMTP_FROM && userEmails) {
+    if (SMTP_FROM && userEmail) {
       try {
         const mailOptions = {
           from: SMTP_FROM,
