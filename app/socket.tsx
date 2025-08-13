@@ -11,6 +11,7 @@ interface ServerToClientEvents {
   online_user_count: (data: { key: string; count: number }) => void;
   activity_notification: (data: { userId: string; activityId: string; actionType: string; timestamp: number; notificationId?: string }) => void;
   new_message_id: (data: { messageId: string; timestamp: number }) => void;
+  new_notification: (data: { notificationId: string; type: string; title: string; message: string; orderId?: string; timestamp: number }) => void;
 }
 
 interface ClientToServerEvents {
@@ -216,6 +217,39 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
         
         // Add to processed IDs to prevent duplicates if notificationId exists
+        if (notificationId) {
+          setProcessedNotificationIds(prev => {
+            const newSet = new Set(prev);
+            newSet.add(notificationId);
+            return newSet;
+          });
+        }
+        
+        // Update last activity timestamp
+        setLastActivity(Date.now());
+        
+        // Debounce the fetch of updated unread counts
+        if (fetchTimeoutRef.current) {
+          clearTimeout(fetchTimeoutRef.current);
+        }
+        
+        fetchTimeoutRef.current = setTimeout(() => {
+          fetchUnreadCounts();
+          fetchTimeoutRef.current = null;
+        }, 1000);
+      });
+
+      // Handle new order notifications
+      newSocket.on("new_notification", (data) => {
+        console.log('[Socket] Received new notification:', data);
+        const { notificationId, type, title, message } = data || {};
+        
+        // Check if we've already processed this notification
+        if (notificationId && processedNotificationIds.has(notificationId)) {
+          return;
+        }
+        
+        // Add to processed IDs to prevent duplicates
         if (notificationId) {
           setProcessedNotificationIds(prev => {
             const newSet = new Set(prev);

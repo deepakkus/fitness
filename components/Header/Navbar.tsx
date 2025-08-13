@@ -213,9 +213,14 @@ export default function Navbar() {
     const handleActivityNotification = () => {
       fetchNotifications();
     };
+    const handleNewNotification = () => {
+      fetchNotifications();
+    };
     socket.on('activity_notification', handleActivityNotification);
+    socket.on('new_notification', handleNewNotification);
     return () => {
       socket.off('activity_notification', handleActivityNotification);
+      socket.off('new_notification', handleNewNotification);
     };
   }, [socket, fetchNotifications]);
 
@@ -445,7 +450,7 @@ export default function Navbar() {
                 </Box>
               </Link>
             )}
-			{session && (
+            {session && (
               <Link href="/profile/me">
                 <Box
                   fontWeight="500"

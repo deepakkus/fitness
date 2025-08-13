@@ -95,6 +95,9 @@ export async function GET(request: NextRequest) {
         case "join_request_accepted":
           meaningful_text = "Your request to join the activity was accepted!";
           break;
+        case "order":
+          meaningful_text = metadata.title || "New order received";
+          break;
         default:
           meaningful_text = notification.notification_type;
       }
