@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
-import { getIO } from "@/lib/socket-io";
+import { getIO, safeEmit } from "@/lib/socket-io";
 
 export async function POST(request: NextRequest) {
   const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
@@ -11,13 +11,18 @@ export async function POST(request: NextRequest) {
   const user_id = BigInt(token.user.id);
   const { cart } = await request.json();
 
+  console.log(`[OrderDetails API] Processing order for user ${user_id} with ${cart.length} items`);
+
   try {
     const createdOrders = [];
     
     for (const item of cart) {
       // Fetch vendor_id from product
       const product = await prisma.products.findUnique({ where: { id: BigInt(item.id) } });
-      if (!product) continue;
+      if (!product) {
+        console.log(`[OrderDetails API] Product ${item.id} not found, skipping`);
+        continue;
+      }
       
       const order = await prisma.order_details.create({
         data: {
@@ -31,6 +36,7 @@ export async function POST(request: NextRequest) {
         },
       });
       
+      console.log(`[OrderDetails API] Created order ${order.id} for product ${product.name}`);
       createdOrders.push({ order, product });
     }
 
@@ -57,20 +63,26 @@ export async function POST(request: NextRequest) {
           },
         });
         
-        console.log(`[OrderDetails API] Notification created for vendor ${order.vendor_id} about order ${order.id}`);
+        console.log(`[OrderDetails API] Notification ${notification.id} created for vendor ${order.vendor_id} about order ${order.id}`);
         
-        // Emit real-time notification via socket
-        const io = getIO();
-        if (io) {
-          io.to(`user_${order.vendor_id}`).emit("new_notification", {
-            notificationId: notification.id.toString(),
-            type: "order",
-            title: "New order received",
-            message: `You have received a new order for ${product.name}`,
-            orderId: order.id,
-            timestamp: Date.now()
-          });
-          console.log(`[OrderDetails API] Socket notification emitted to vendor ${order.vendor_id}`);
+        // Emit real-time notification via socket (with production fallback)
+        const notificationData = {
+          notificationId: notification.id.toString(),
+          type: "order",
+          title: "New order received",
+          message: `You have received a new order for ${product.name}`,
+          orderId: order.id,
+          timestamp: Date.now()
+        };
+
+        const room = `user_${order.vendor_id}`;
+        const socketSuccess = safeEmit("new_notification", notificationData, room);
+        
+        if (socketSuccess) {
+          console.log(`[OrderDetails API] Socket notification emitted to vendor ${order.vendor_id} in room ${room}`);
+        } else {
+          console.log(`[OrderDetails API] Socket notification failed, but notification saved to database`);
+          // In production, the notification will still be available when the user refreshes or polls
         }
       } catch (notificationError) {
         console.error(`[OrderDetails API] Error creating notification for order ${order.id}:`, notificationError);
@@ -78,7 +90,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ success: true, ordersCreated: createdOrders.length });
+    console.log(`[OrderDetails API] Successfully processed ${createdOrders.length} orders with notifications`);
+
+    return NextResponse.json({ 
+      success: true, 
+      ordersCreated: createdOrders.length,
+      notificationsCreated: createdOrders.length, // Each order creates one notification
+      socketAvailable: !!getIO() // Indicate if socket is available for debugging
+    });
   } catch (error) {
     console.error('[OrderDetails API] Error:', error);
     return NextResponse.json({ error: "Failed to save order" }, { status: 500 });

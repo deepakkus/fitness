@@ -183,7 +183,15 @@
 
 
 import { NextResponse } from 'next/server';
+import { getIO } from '@/lib/socket-io';
 
 export async function GET() {
-  return NextResponse.json({ status: 'Socket server is handled by server.js' }, { status: 200 });
+  const io = getIO();
+  
+  return NextResponse.json({
+    status: 'Socket.IO Status',
+    ioAvailable: !!io,
+    connectedClients: io ? io.engine.clientsCount : 0,
+    timestamp: new Date().toISOString()
+  });
 }
