@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
       try {
         const mailOptions = {
           from: SMTP_FROM,
-          to: userEmails, // Send to the actual user's email
+          to: userEmail, // Send to the actual user's email
           subject: `Product Purchased`,
           html: `
             <h2>Purchase Confirmation</h2>
