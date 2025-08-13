@@ -28,14 +28,15 @@ async function createOrderNotification(
       triggerer_type: "user",
       notification_type: "order",
       created_at: new Date(),
-      metadata: JSON.stringify({
-        title: "New Order Received",
-        productId: productId.toString(),
-        productName: productName,
-        buyerName: buyer?.name || "A customer",
-        price: price,
-        orderType: "product_purchase"
-      }),
+              metadata: JSON.stringify({
+          title: "New Order Received",
+          orderId: productId.toString(), // Changed from productId to orderId to match click handler
+          productId: productId.toString(),
+          productName: productName,
+          buyerName: buyer?.name || "A customer",
+          price: price,
+          orderType: "product_purchase"
+        }),
     };
     
     console.log(`[createOrderNotification] Creating notification with data:`, notificationData);

@@ -49,8 +49,12 @@ function UserNotification({ notification, markAsRead }: UserNotificationProps) {
       await markAsRead(notification.id);
       setIsRead(true);
     }
-    if (notification.notification_type === "order" && meta?.orderId) {
-      router.push(`/vendor/dashboard?tab=delivery&orderId=${meta.orderId}`);
+    if (notification.notification_type === "order") {
+      if (meta?.orderId) {
+        router.push(`/vendor/dashboard?tab=delivery&orderId=${meta.orderId}`);
+      } else {
+        router.push('/vendor/dashboard?tab=delivery');
+      }
       return;
     }
     switch (notification.notification_type) {
@@ -228,6 +232,7 @@ const NotificationDrawer = React.forwardRef<HTMLDivElement, NotificationProps>(
       ...notifications.comment, 
       ...notifications.like, 
       ...notifications.activity_join,
+      ...notifications.order, // Include order notifications
       ...(notifications.post || []) // Include post notifications
  
     ].sort((a, b) => {
@@ -235,6 +240,21 @@ const NotificationDrawer = React.forwardRef<HTMLDivElement, NotificationProps>(
       const dateB = new Date(b.notification_timestamp || b.created_at || 0);
       return dateB.getTime() - dateA.getTime();
     });
+
+    // Debug logging for order notifications
+    console.log("Notification counts:", {
+      message: notifications.message.length,
+      comment: notifications.comment.length,
+      like: notifications.like.length,
+      activity_join: notifications.activity_join.length,
+      order: notifications.order.length,
+      post: notifications.post?.length || 0,
+      total: allNotifications.length
+    });
+    
+    if (notifications.order.length > 0) {
+      console.log("Order notifications found:", notifications.order);
+    }
 
     // Check if there are any unread notifications
     const hasUnread = allNotifications.some(notification => !notification.read_at);
