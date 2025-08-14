@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
+import { getIO } from "@/lib/socket-io";
 
 // Function to create order notifications
 async function createOrderNotification(
@@ -46,6 +47,23 @@ async function createOrderNotification(
     });
 
     console.log(`[createOrderNotification] Notification created successfully with ID: ${notification.id}`);
+    
+    // Emit socket event to trigger real-time notification count update
+    try {
+      const io = getIO();
+      if (io) {
+        io.to(`user_${vendorId}`).emit("new_notification", {
+          notificationId: notification.id.toString(),
+          type: "order",
+          title: "New Order Received",
+          message: `New order received for ${productName}`
+        });
+        console.log(`[createOrderNotification] Socket event emitted for vendor ${vendorId}`);
+      }
+    } catch (socketError) {
+      console.error(`[createOrderNotification] Socket emit error:`, socketError);
+    }
+    
     return notification;
   } catch (error) {
     console.error(`[createOrderNotification] Error creating order notification:`, error);
