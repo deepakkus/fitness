@@ -1342,7 +1342,7 @@ useEffect(() => {
                                 Once payment is completed, your post will be displayed as a Sponsored post on the homepage, as shown below
                               </Text>
                               <Text fontSize={{base:"15px",sm:"18px",md:"20px",lg:"32px"}} fontWeight="bold" mb={4} color={'#F9690E'} as={'h2'}>
-                                You need to simply select "Yes" from the Sponsored Post dropdown and pay $2 for this.
+                                On the Create Post page, simply select "Yes" from the Sponsored Post dropdown to mark your post as sponsored.
                               </Text>
                               <Image
                                 // boxSize='100%'
