@@ -150,6 +150,14 @@ export default function CreateProduct() {
       try {
         const res = await axios.get(`/api/products/${productId}`);
         const data = res.data?.data?.[0];
+        console.log("Product data loaded:", {
+          name: data?.name,
+          pdfs: data?.pdfs,
+          documents: data?.documents,
+          pdfsLink: Array.isArray(data?.pdfs) ? data.pdfs.map((pdf: { name: string, mediaId: string }) => ({ name: pdf.name, mediaId: pdf.mediaId })) : [],
+          docsLink: Array.isArray(data?.documents) ? data.documents.map((doc: { name: string, mediaId: string }) => ({ name: doc.name, mediaId: doc.mediaId })) : []
+        });
+        
         if (data && isMounted) {
           setProductFormData((prev) => ({
             ...prev,
@@ -1726,7 +1734,13 @@ const DocumentUploaderHandleDelete = (index: number) => {
                     </>
                     )}
                     
-                    {Array.isArray(productFormData?.pdfs) && productFormData.pdfs.length > 0 &&(
+                    {(Array.isArray(productFormData?.pdfs) && productFormData.pdfs.length > 0) || 
+                     (Array.isArray(productFormData?.pdfsLink) && productFormData.pdfsLink.length > 0) &&(
+                      console.log("Rendering PDF section:", {
+                        pdfs: productFormData?.pdfs?.length || 0,
+                        pdfsLink: productFormData?.pdfsLink?.length || 0,
+                        pdfsLinkData: productFormData?.pdfsLink
+                      }),
                         <>
                            <Text
                       fontSize={"18px"}
@@ -1740,8 +1754,22 @@ const DocumentUploaderHandleDelete = (index: number) => {
                       Course Materials PDF
                     </Text>
                     <OrderedList spacing={2} px={"20px"}>
-                      {productFormData.pdfs.map((file, index) => (
-                        <ListItem key={index}>
+                      {/* Show backend PDFs first */}
+                      {Array.isArray(productFormData?.pdfsLink) && productFormData.pdfsLink.map((pdf, index) => (
+                        <ListItem key={`backend-pdf-${index}`}>
+                          <Link
+                            href={`/api/products/${productId}/media/${pdf.mediaId}/pdf`}
+                            color="blue.500"
+                            isExternal
+                            wordBreak="break-all"
+                          >
+                            {pdf.name}
+                          </Link>
+                        </ListItem>
+                      ))}
+                      {/* Show new PDFs */}
+                      {Array.isArray(productFormData?.pdfs) && productFormData.pdfs.map((file, index) => (
+                        <ListItem key={`new-pdf-${index}`}>
                           <Link
                             href={URL.createObjectURL(file)}
                             download={file.name}
@@ -1756,7 +1784,13 @@ const DocumentUploaderHandleDelete = (index: number) => {
                     </OrderedList>
                         </>
                     )}
-                    {Array.isArray(productFormData?.documents) && productFormData.documents.length > 0 &&(
+                    {(Array.isArray(productFormData?.documents) && productFormData.documents.length > 0) || 
+                     (Array.isArray(productFormData?.docsLink) && productFormData.docsLink.length > 0) &&(
+                      console.log("Rendering Documents section:", {
+                        documents: productFormData?.documents?.length || 0,
+                        docsLink: productFormData?.docsLink?.length || 0,
+                        docsLinkData: productFormData?.docsLink
+                      }),
                       <>
                            <Text
                       fontSize={"18px"}
@@ -1769,8 +1803,22 @@ const DocumentUploaderHandleDelete = (index: number) => {
                       Course Materials Documents
                     </Text>
                     <OrderedList spacing={2} px={"20px"}>
-                      {productFormData.documents.map((file, index) => (
-                        <ListItem key={index}>
+                      {/* Show backend documents first */}
+                      {Array.isArray(productFormData?.docsLink) && productFormData.docsLink.map((doc, index) => (
+                        <ListItem key={`backend-doc-${index}`}>
+                          <Link
+                            href={`/api/products/${productId}/media/${doc.mediaId}/document`}
+                            color="blue.500"
+                            isExternal
+                            wordBreak="break-all"
+                          >
+                            {doc.name}
+                          </Link>
+                        </ListItem>
+                      ))}
+                      {/* Show new documents */}
+                      {Array.isArray(productFormData?.documents) && productFormData.documents.map((file, index) => (
+                        <ListItem key={`new-doc-${index}`}>
                           <Link
                             href={URL.createObjectURL(file)}
                             download={file.name}
