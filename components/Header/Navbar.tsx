@@ -599,9 +599,8 @@ export default function Navbar() {
                 >
                   <NotificationIcon width="24px" height="24px" stroke="#64748B" />
                   {(() => {
-                    //const notifTotal = (unreadCounts.message || 0) + (unreadCounts.comment || 0) + (unreadCounts.like || 0) + (unreadCounts.activity_join || 0) + (unreadCounts.order || 0);
-                    const notifTotal = 2;
-					return notifTotal > 0 && (
+                    const notifTotal = (unreadCounts.message || 0) + (unreadCounts.comment || 0) + (unreadCounts.like || 0) + (unreadCounts.activity_join || 0) + (unreadCounts.order || 0);
+                    return notifTotal > 0 && (
                       <Box
                         pos="absolute"
                         top="2"
