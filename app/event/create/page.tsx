@@ -1390,9 +1390,13 @@ useEffect(() => {
                                                 </Box>
                                               ) : (
                                                 <Box p={6}>
-                                                  <Text fontSize={{base:"15px",sm:"18px",md:"20px",lg:"32px"}} fontWeight="bold" mb={4} color={'#F9690E'} as={'h2'}>
-                                                    Sponsored Listing will be Displayed on Home Page Like Below
-                                                  </Text>
+                                                  <Text fontSize={{base:"5px",sm:"10px",md:"10px",lg:"22px"}} fontWeight="500" color={'#000'} as={'h1'} align={"center"}>
+													Sponsored posts remain active for <Text as={"span"} color={'#F9690E'}>30 Days</Text> and require one-time payment of <Text as={"span"} color={'#F9690E'}>$2</Text>.
+													Once payment is completed, your post will be displayed as a Sponsored post on the homepage, as shown below
+												  </Text>
+												  <Text fontSize={{base:"15px",sm:"18px",md:"20px",lg:"32px"}} fontWeight="bold" mb={4} color={'#F9690E'} as={'h2'}>
+													On the Create Post page, simply select "Yes" from the Sponsored Post dropdown to mark your post as sponsored.
+												  </Text>
                                                   <Image
                                                     // boxSize='100%'
                                                     w={"100%"}
