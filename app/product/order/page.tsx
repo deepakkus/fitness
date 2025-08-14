@@ -122,6 +122,7 @@ function CheckOutProduct() {
       try {
         const res = await axios.get("/api/billing-details");
         if (res.data && res.data.data) {
+          // If billing details exist, use them (including email from billing_details table)
           setFormData({
             firstName: res.data.data.first_name,
             lastName: res.data.data.last_name,
@@ -132,8 +133,24 @@ function CheckOutProduct() {
             address: res.data.data.address,
           });
           setBillingId(res.data.data.id);
+        } else {
+          // If no billing details exist, populate with logged-in user's email
+          if (session?.user?.email) {
+            setFormData(prev => ({
+              ...prev,
+              emailAddress: session.user.email
+            }));
+          }
         }
-      } catch {}
+      } catch {
+        // If API call fails, populate with logged-in user's email as fallback
+        if (session?.user?.email) {
+          setFormData(prev => ({
+            ...prev,
+            emailAddress: session.user.email
+          }));
+        }
+      }
     };
     fetchBilling();
 
@@ -156,7 +173,7 @@ function CheckOutProduct() {
     const stored = JSON.parse(localStorage.getItem("cart") || "[]");
     setCart((stored as any[]).map((item) => ({ ...item, price: Number(item.price) })));
   }
-  }, []);
+  }, [session]);
 
   // Event handlers
   const handleNext = async () => {
