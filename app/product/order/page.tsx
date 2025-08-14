@@ -122,33 +122,64 @@ function CheckOutProduct() {
       try {
         const res = await axios.get("/api/billing-details");
         if (res.data && res.data.data) {
-          // If billing details exist, use them (including email from billing_details table)
-          setFormData({
-            firstName: res.data.data.first_name,
-            lastName: res.data.data.last_name,
-            emailAddress: res.data.data.email,
-            phoneNumber: res.data.data.phone,
-            city: res.data.data.city,
-            zip: res.data.data.zip,
-            address: res.data.data.address,
-          });
-          setBillingId(res.data.data.id);
+          // Check if the billing details have meaningful data (not just auto-created empty row)
+          const hasRealData = res.data.data.first_name || res.data.data.last_name || 
+                             res.data.data.phone || res.data.data.city || 
+                             res.data.data.zip || res.data.data.address;
+          
+          if (hasRealData || res.data.data.email) {
+            // If billing details exist with real data, use them
+            setFormData({
+              firstName: res.data.data.first_name,
+              lastName: res.data.data.last_name,
+              emailAddress: res.data.data.email || session?.user?.email || "",
+              phoneNumber: res.data.data.phone,
+              city: res.data.data.city,
+              zip: res.data.data.zip,
+              address: res.data.data.address,
+            });
+            setBillingId(res.data.data.id);
+          } else {
+            // If only auto-created empty row exists, populate with logged-in user's email
+            if (session?.user?.email) {
+              setFormData({
+                firstName: "",
+                lastName: "",
+                emailAddress: session.user.email,
+                phoneNumber: "",
+                city: "",
+                zip: "",
+                address: "",
+              });
+            }
+            setBillingId(res.data.data.id); // Keep the ID for future updates
+          }
         } else {
           // If no billing details exist, populate with logged-in user's email
           if (session?.user?.email) {
-            setFormData(prev => ({
-              ...prev,
-              emailAddress: session.user.email
-            }));
+            setFormData({
+              firstName: "",
+              lastName: "",
+              emailAddress: session.user.email,
+              phoneNumber: "",
+              city: "",
+              zip: "",
+              address: "",
+            });
           }
         }
       } catch {
         // If API call fails, populate with logged-in user's email as fallback
         if (session?.user?.email) {
-          setFormData(prev => ({
-            ...prev,
-            emailAddress: session.user.email
-          }));
+          setFormData({
+            firstName: "",
+            lastName: "",
+            emailAddress: session.user.email,
+            phoneNumber: "",
+            city: "",
+            zip: "",
+            address: "",
+          });
         }
       }
     };
