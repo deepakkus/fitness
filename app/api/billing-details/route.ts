@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
   }
   const user_id = BigInt(token.user.id);
   const data = await request.json();
-	console.log('fname=='+data.firstName)
+
   try {
     const billing = await prisma.billing_details.create({
       data: {
@@ -18,8 +18,8 @@ export async function POST(request: NextRequest) {
         last_name: data.lastName,
         email: data.emailAddress,
         phone: data.phoneNumber,
-        city: data.city,
-        zip: data.zip,
+        city: "", // Not saving user input, using empty string
+        zip: "", // Not saving user input, using empty string
         address: data.address,
         created_at: new Date(),
       },
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     orderBy: { created_at: 'desc' }
   });
 
-  /*if (!billing) {
+  if (!billing) {
     // Auto-create a new row with empty/default values
     billing = await prisma.billing_details.create({
       data: {
@@ -51,14 +51,14 @@ export async function GET(request: NextRequest) {
         last_name: '',
         email: '',
         phone: '',
-        city: '',
-        zip: '',
+        city: '', // Empty string for auto-created rows
+        zip: '', // Empty string for auto-created rows
         address: '',
         created_at: new Date(),
       },
     });
   }
-*/
+
   return NextResponse.json({ data: billing });
 }
 
@@ -78,8 +78,8 @@ export async function PUT(request: NextRequest) {
         last_name: data.lastName,
         email: data.emailAddress,
         phone: data.phoneNumber,
-        city: data.city,
-        zip: data.zip,
+        city: "", // Not saving user input, using empty string
+        zip: "", // Not saving user input, using empty string
         address: data.address,
         created_at: new Date(),
       },

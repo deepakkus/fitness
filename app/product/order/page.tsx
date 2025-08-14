@@ -124,8 +124,7 @@ function CheckOutProduct() {
         if (res.data && res.data.data) {
           // Check if the billing details have meaningful data (not just auto-created empty row)
           const hasRealData = res.data.data.first_name || res.data.data.last_name || 
-                             res.data.data.phone || res.data.data.city || 
-                             res.data.data.zip || res.data.data.address;
+                             res.data.data.phone || res.data.data.address;
           
           if (hasRealData || res.data.data.email) {
             // If billing details exist with real data, use them
@@ -265,9 +264,6 @@ function CheckOutProduct() {
     else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(formData.emailAddress)) errors.emailAddress = "Invalid email";
     if (!formData.phoneNumber) errors.phoneNumber = "Phone number is required";
     else if (!/^\d{7,15}$/.test(formData.phoneNumber)) errors.phoneNumber = "Invalid phone number";
-    if (!formData.city) errors.city = "City is required";
-    if (!formData.zip) errors.zip = "Zip is required";
-    else if (!/^\d{4,10}$/.test(formData.zip)) errors.zip = "Invalid zip code";
     if (!formData.address) errors.address = "Address is required";
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -533,9 +529,9 @@ function CheckOutProduct() {
                   </Box>
                 </Box>
 
-                <Box>
+                
                   {/*  city & zip  */}
-                  <Box display={"flex"} gap="20px">
+                  {/* <Box display={"flex"} gap="20px">
                     <Box flex="1">
                       <FormLabel color={"#475569"} fontSize={"14px"}>
                         City
@@ -570,8 +566,8 @@ function CheckOutProduct() {
                       />
                       {formErrors.zip && <Text color="red.500" fontSize="sm">{formErrors.zip}</Text>}
                     </Box>
-                  </Box>
-                </Box>
+                  </Box> */}
+                
 
                 <Box>
                   <FormLabel color={"#475569"} fontSize={"14px"}>
@@ -581,7 +577,7 @@ function CheckOutProduct() {
                   <Input
                     focusBorderColor="#F9690E"
                     type="text"
-                    placeholder="Enter Address"
+                    placeholder="Address, City, State, Zip"
                     fontSize={"16px"}
                     name="address"
                     value={formData.address}
