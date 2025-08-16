@@ -707,10 +707,10 @@ view activity_comments_likes_view {
 
 
 model activity_members_messages_view {
-  user_id              Int
-  activity_id          Int
+  user_id              BigInt
+  activity_id          BigInt
   activity_title       String?
-  activity_member_number Int?
+  activity_member_number BigInt?
   activity_created_at  DateTime?
   activity_start_time  DateTime?
   activity_admin_name  String?
