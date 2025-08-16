@@ -276,9 +276,9 @@ const validateField = (fieldName: keyof ValidationRules, value: any, context: { 
       if (rules.required && !value) {
         return { field: fieldName, message: 'Start date is required' };
       }
-      if (new Date(value) < rules.minDate) {
-        return { field: fieldName, message: 'Start date cannot be in the past' };
-      }
+      //if (new Date(value) < rules.minDate) {
+        //return { field: fieldName, message: 'Start date cannot be in the past' };
+      //}
       break;
 
     case 'start_time':

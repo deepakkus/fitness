@@ -625,9 +625,10 @@ const validateEventForm = (formData: EventFormData, activeStep: number): Validat
     
     if (!formData.start_date) {
       errors.push({ field: 'start_date', message: 'Start date is required' });
-    } else if (selectedDate < currentDate) {
-      errors.push({ field: 'start_date', message: 'Start date cannot be in the past' });
-    }
+    } 
+	//else if (selectedDate < currentDate) {
+      //errors.push({ field: 'start_date', message: 'Start date cannot be in the past' });
+   // }
 
     if (!formData.start_time) {
       errors.push({ field: 'start_time', message: 'Start time is required' });
