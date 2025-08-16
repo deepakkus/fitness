@@ -1,20 +1,26 @@
 // lib/logger.ts
-import pino from 'pino';
-import { join } from 'path';
-import fs from 'fs';
+import pino from "pino";
+import { join } from "path";
+import fs from "fs";
 
-const isProduction = (process.env.NODE_ENV || '').trim() === 'production';
+const isProduction = (process.env.NODE_ENV || "").trim() === "production";
+const isVercel = !!process.env.VERCEL;
 
-if (isProduction) {
-  const logDir = join(process.cwd(), 'logs');
+let destination: pino.DestinationStream | undefined = undefined;
+
+if (!isVercel) {
+  // ✅ Local only: write logs to file
+  const logDir = join(process.cwd(), "logs");
   fs.mkdirSync(logDir, { recursive: true });
+
+  const logFilePath = join(logDir, "app.log");
+  destination = pino.destination(logFilePath);
 }
 
-const logFilePath = join(process.cwd(), 'logs', 'app.log');
-
+// ✅ On Vercel → logs go to stdout/stderr
 const logger = pino(
   {
-    level: isProduction ? 'info' : 'debug',
+    level: isProduction ? "info" : "debug",
     timestamp: pino.stdTimeFunctions.isoTime,
     formatters: {
       level: (label) => ({ level: label }),
@@ -24,7 +30,7 @@ const logger = pino(
       hostname: undefined,
     },
   },
-  isProduction ? pino.destination(logFilePath) : undefined
+  destination
 );
 
 export default logger;
