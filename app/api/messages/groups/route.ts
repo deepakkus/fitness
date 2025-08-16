@@ -198,6 +198,10 @@ export async function GET(request: NextRequest) {
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || '';
     const user_id = BigInt(token.user.id);
+	const result = await prisma.$queryRaw`
+  SELECT * FROM activity_members_messages_view
+`;
+console.log(result);
 
     // Fetch groups with error handling
     const groups = await prisma.activity_members_messages_view.findMany({
