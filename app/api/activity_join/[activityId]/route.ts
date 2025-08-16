@@ -547,14 +547,35 @@ export async function POST(request: NextRequest, { params }: { params: { activit
                     });
                     
                     // Create the join request with "accepted" status
-                    joinRequest = await tx.activity_join_requests.create({
+                    /*joinRequest = await tx.activity_join_requests.create({
                         data: {
                             activity_id: activity_id,
                             user_id: userId,
                             status: "accepted",
                             comments: "Automatically accepted as activity has less than 2 members.",
                         },
-                    });
+                    });*/
+					
+					
+					try {
+					  joinRequest = await tx.activity_join_requests.create({
+						data: {
+						  activity_id: activity_id,
+						  user_id: userId,
+						  status: "voting",
+						},
+					  });
+					} catch (err: any) {
+					  // MySQL SIGNAL error (code 1644, state 45000)
+					  if (err.message?.includes("Cannot request to join an activity")) {
+						return NextResponse.json(
+						  { error: "Activity has already started or ended" },
+						  { status: 400 }
+						);
+					  }
+					  throw err; // let other errors bubble up normally
+					}
+
 
                     // Create acceptance notification for the user who joined
                     await createOrUpdateNotifications({
