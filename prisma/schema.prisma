@@ -707,21 +707,22 @@ view activity_comments_likes_view {
 
 
 model activity_members_messages_view {
-  row_id                 BigInt    @id
-  user_id              BigInt
+  user_id              Int
   activity_id          Int
-  title                String
-  created_at           DateTime
-  start_time           DateTime
-  name                 String?
-  profile_picture      String?
-  message              String?
-  added_by             BigInt?
-  message_created_at   DateTime?
-  admin_profile_picture String?
+  activity_title       String?
+  activity_member_number Int?
+  activity_created_at  DateTime?
+  activity_start_time  DateTime?
+  activity_admin_name  String?
+  activity_admin_profile_picture String?
+  last_message         String?
+  last_message_time    DateTime?
+  last_message_sender_profile_picture String?
+  activity_media       String?
 
-  @@map("activity_members_messages_view")
+  @@id([user_id, activity_id]) // composite primary key
 }
+
 
 enum activity_logs_action_type {
   Created
