@@ -705,6 +705,24 @@ view activity_comments_likes_view {
   @@ignore
 }
 
+
+model activity_members_messages_view {
+  row_id                 BigInt    @id
+  user_id              BigInt
+  activity_id          Int
+  title                String
+  created_at           DateTime
+  start_time           DateTime
+  name                 String?
+  profile_picture      String?
+  message              String?
+  added_by             BigInt?
+  message_created_at   DateTime?
+  admin_profile_picture String?
+
+  @@map("activity_members_messages_view")
+}
+
 enum activity_logs_action_type {
   Created
   Updated
