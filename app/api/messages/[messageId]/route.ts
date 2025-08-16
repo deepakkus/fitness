@@ -53,7 +53,7 @@ export async function GET(request: NextRequest, { params }: { params: { messageI
       return {
         id: message.message_id.toString(),
         message: message.message,
-        created_at: message.message_created_at.toISOString(),
+        created_at: message.message_created_at ? message.message_created_at.toISOString() : new Date().toISOString(),
         sender: {
           id: message.sender_id.toString(), // Using row_id as a unique identifier for the sender (since sender id is not included in view)
           name: message.sender_name, // Nullable sender name
