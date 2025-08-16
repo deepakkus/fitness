@@ -200,13 +200,12 @@ export async function GET(request: NextRequest) {
     const user_id = BigInt(token.user.id);
 
     // Fetch groups with error handling
-    const groups = await prisma.activity_members_messages_view.findMany({
-      where: { user_id },
-      orderBy: { row_id: "desc" },
-    }).catch(error => {
-      console.error("Error fetching groups view:", error);
-      return [];
-    });
+    const groups = await prisma.$queryRawUnsafe<any[]>(`
+      SELECT *
+      FROM activity_members_messages_view
+      WHERE user_id = ${user_id}
+      ORDER BY activity_created_at DESC
+    `);
 
     if (!groups.length) {
       return NextResponse.json({ groups: [] });
