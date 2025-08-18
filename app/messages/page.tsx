@@ -920,9 +920,12 @@ function MessagesContent() {
           withCredentials: true,
         });
         console.log(`[DEBUG] Messages response:`, msgRes.data);
-        setMessages(msgRes.data.messages);
+        console.log(`[DEBUG] Messages array:`, msgRes.data.messages);
+        console.log(`[DEBUG] Messages length:`, msgRes.data.messages?.length);
+        setMessages(msgRes.data.messages || []);
       } catch (error) {
         console.error("fetchMessages() error:", error);
+        setMessages([]);
       }
     }
   };
@@ -1025,6 +1028,14 @@ useEffect(() => {
         // CRITICAL FIX: Only process messages for the currently selected activity
         if (session && isTabActive && activityId && activityId === selectedActivityId) {
           console.log(`[DEBUG] Processing message for current activity`);
+          
+          // Check if this message is already in the local state (to prevent duplicates)
+          const messageExists = messages.some(msg => msg.id === messageId.toString());
+          if (messageExists) {
+            console.log(`[DEBUG] Message ${messageId} already exists in local state, skipping`);
+            return;
+          }
+          
           const res = await axios.get(`/api/messages/${messageId}`, {
             withCredentials: true,
           });
@@ -1045,7 +1056,7 @@ useEffect(() => {
       socket.off("new_message_id", handleNewMessage);
     };
   }
-}, [socket, session, isTabActive, selectedActivityId]); 
+}, [socket, session, isTabActive, selectedActivityId, messages]); 
 
   useEffect(() => {
     const handleVisibilityChange = async () => {
@@ -1270,6 +1281,24 @@ useEffect(() => {
         if (newMessage && newMessage.id) {
           const message_id = newMessage.id;
           const activity_id = newMessage.activity_id;
+
+          // Immediately add the sent message to the local state for instant UI update
+          const sentMessage = {
+            id: message_id.toString(),
+            message: inputMessage,
+            created_at: newMessage.created_at,
+            sender: {
+              id: session.user.id,
+              name: session.user.name,
+              profile_picture: session.user.profile_picture || null,
+            },
+            media: postFormData.images.length > 0 ? postFormData.images.map((_, index) => ({
+              url: postFormData.imagesLink[index] || "",
+            })) : [],
+          };
+          
+          // Add the message to the local state immediately
+          setMessages((prevMessages) => [...prevMessages, sentMessage]);
 
           if (postFormData.images.length == 0) {
             toast({
@@ -1569,11 +1598,19 @@ useEffect(() => {
                   <Text textAlign="center" color="gray.400" mt="2" fontSize="sm">
                     Debug: messages.length = {messages.length}, selectedActivityId = {selectedActivityId}
                   </Text>
+                  <Text textAlign="center" color="gray.400" mt="1" fontSize="sm">
+                    Debug: selectedGroup = {selectedGroup?.title}, userData = {userData?.id}
+                  </Text>
                 </Box>
               ) : (
-                messages.map((message) => (
-                  <ChatMessage key={message.id} userId={`${userData?.id}`} message={message} />
-                ))
+                <>
+                  <Text textAlign="center" color="gray.400" mb="2" fontSize="sm">
+                    Debug: Showing {messages.length} messages
+                  </Text>
+                  {messages.map((message) => (
+                    <ChatMessage key={message.id} userId={`${userData?.id}`} message={message} />
+                  ))}
+                </>
               )}
             </Box>
             <div ref={messagesEndRef} />
