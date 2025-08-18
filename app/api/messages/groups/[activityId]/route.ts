@@ -103,10 +103,28 @@ export async function GET(request: NextRequest, { params }: { params: { activity
   }
 
   try {
-    // Query the new view for messages related to the given activity
-    const messages = await prisma.activity_messages_view.findMany({
+    // Query the messages table directly with proper joins
+    const messages = await prisma.messages.findMany({
       where: {
-        activity_id: BigInt(activityId), // Filter by activity ID
+        activity_id: BigInt(activityId),
+        deleted_at: null, // Only get non-deleted messages
+      },
+      include: {
+        users: {
+          select: {
+            id: true,
+            name: true,
+            profile_picture: true,
+          },
+        },
+        message_media: {
+          select: {
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        created_at: 'asc', // Order by creation time
       },
     });
 
@@ -115,25 +133,23 @@ export async function GET(request: NextRequest, { params }: { params: { activity
 
     // Format the messages for response
     const formattedMessages: Message[] = messages.map((message) => {
-      // Split comma-separated media names and construct URLs
-      const media =
-        message.message_media_names ?
-          message.message_media_names.split(",").map((name) => ({
-            url: `${baseUrl}/api/images/${name.trim()}`,
-          }))
-        : [];
+      // Format media URLs
+      const media = message.message_media.map((mediaItem) => ({
+        url: `${baseUrl}/api/images/${mediaItem.name}`,
+      }));
 
       return {
-        id: message.message_id.toString(),
+        id: message.id.toString(),
         message: message.message,
-        created_at: message.message_created_at.toISOString(),
+        created_at: message.created_at.toISOString(),
         sender: {
-          id: message.sender_id.toString(), // Using row_id as a unique identifier for the sender (since sender id is not included in view)
-          name: message.sender_name, // Nullable sender name
-          profile_picture:
-            message.sender_profile_picture ? `${baseUrl}/api/images/${message.sender_profile_picture}` : null,
+          id: message.users.id.toString(),
+          name: message.users.name,
+          profile_picture: message.users.profile_picture 
+            ? `${baseUrl}/api/images/${message.users.profile_picture}` 
+            : null,
         },
-        media, // List of media URLs
+        media,
       };
     });
 

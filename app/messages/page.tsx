@@ -516,7 +516,7 @@ function ChatMessage({ userId, message }: { userId: string; message: Message }) 
         {!isUser && <Avatar size="sm" src={message.sender.profile_picture} />}
         <Box display="flex" flexDir={"column"} alignItems={isUser ? "flex-end" : "flex-start"} gap="5px">
           <Box fontSize={"13px"} color={"#64748B"}>
-            {message.sender.name} : {dayjs(message.created_at).format("hh:mm A")}
+            {message.sender.name} : {message.created_at ? dayjs(message.created_at).format("hh:mm A") : "Just now"}
           </Box>
           <Box
             fontSize={isOnlyEmojiMessage ? emojiFontSize : baseFontSize}
@@ -571,7 +571,7 @@ interface MembersData {
   }>;
 }
 
-function CustomTab({ children, title, py }) {
+function CustomTab({ children, title, py }: { children: React.ReactNode; title: string; py?: string }) {
   return (
     <Tab
       _selected={{
@@ -735,7 +735,10 @@ function GroupDetails({
                   Created At:
                 </Text>
                 <Text fontSize="16px" color="#334155">
-                  {dayjs(selectedGroup.created_at).format("DD MMM YYYY hh:mm A")}
+                  {selectedGroup.created_at ? 
+                    dayjs(selectedGroup.created_at).format("DD MMM YYYY hh:mm A") : 
+                    "Date not available"
+                  }
                 </Text>
               </Box>
 
@@ -802,7 +805,7 @@ function GroupDetails({
                               <Box display={"flex"} alignItems={"center"} gap={"4px"}>
                                 <HistoryIcon width="18px" height="18px" />
                                 <Text fontSize={"12px"} color="#475569">
-                                  {dayjs(member.created_at).fromNow()}
+                                  {member.created_at ? dayjs(member.created_at).fromNow() : "Recently"}
                                 </Text>
                               </Box>
                             </Box>
@@ -842,7 +845,7 @@ function GroupDetails({
                               <Box display="flex" alignItems="center" gap="4px">
                                 <HistoryIcon width="18px" height="18px" />
                                 <Text fontSize="12px" color="#475569">
-                                  {dayjs(member.created_at).fromNow()}
+                                  {member.created_at ? dayjs(member.created_at).fromNow() : "Recently"}
                                 </Text>
                               </Box>
                             </Box>
@@ -912,9 +915,11 @@ function MessagesContent() {
   const fetchMessages = async () => {
     if (selectedActivityId) {
       try {
+        console.log(`[DEBUG] Fetching messages for activity: ${selectedActivityId}`);
         const msgRes = await axios.get(`/api/messages/groups/${selectedActivityId}`, {
           withCredentials: true,
         });
+        console.log(`[DEBUG] Messages response:`, msgRes.data);
         setMessages(msgRes.data.messages);
       } catch (error) {
         console.error("fetchMessages() error:", error);
@@ -960,6 +965,7 @@ function MessagesContent() {
 
   useEffect(() => {
     if (socket && selectedActivityId) {
+      console.log(`[DEBUG] Joining activity room: ${selectedActivityId}`);
       socket.emit("join_activity_room", selectedActivityId);
       fetchMessages();
     }
@@ -1015,16 +1021,18 @@ useEffect(() => {
   if (socket) {
     const handleNewMessage = async ({ messageId, activityId }) => {
       try {
+        console.log(`[DEBUG] Socket received new message: messageId=${messageId}, activityId=${activityId}, selectedActivityId=${selectedActivityId}`);
         // CRITICAL FIX: Only process messages for the currently selected activity
         if (session && isTabActive && activityId && activityId === selectedActivityId) {
-          // console.log(`[Message] Received message ${messageId} for activity ${activityId}, matches selected activity`);
+          console.log(`[DEBUG] Processing message for current activity`);
           const res = await axios.get(`/api/messages/${messageId}`, {
             withCredentials: true,
           });
           const newMessage = res.data.messages[0];
+          console.log(`[DEBUG] New message data:`, newMessage);
           setMessages((prevMessages) => [...prevMessages, newMessage]);
-        } else if (activityId !== selectedActivityId) {
-          // console.log(`[Message] Ignoring message for activity ${activityId}, currently viewing ${selectedActivityId}`);
+        } else {
+          console.log(`[DEBUG] Ignoring message - not for current activity or conditions not met`);
         }
       } catch (error) {
         console.error("Error fetching new message from socket event:", error);
@@ -1291,6 +1299,7 @@ useEffect(() => {
 
           if (socket) {
             // IMPORTANT: Pass the activityId to ensure proper message routing
+            console.log(`[DEBUG] Sending socket event with messageId: ${message_id}, activityId: ${activity_id}, type: ${typeof activity_id}`);
             socket.emit("send_message", { 
               messageId: message_id, 
               activityId: activity_id, 
@@ -1400,9 +1409,10 @@ useEffect(() => {
                 </Box>
                 <Box display={"flex"} flexDir={"column"} justifyContent={"center"} alignItems={"flex-end"}>
                   <Text fontSize={"12px"} color={"#64748B"}>
-                    {dayjs(group.lastMessage?.created_at ? group.lastMessage?.created_at : group.created_at).format(
-                      "hh:mm A"
-                    )}
+                    {group.lastMessage?.created_at || group.created_at ? 
+                      dayjs(group.lastMessage?.created_at || group.created_at).format("hh:mm A") : 
+                      "No messages yet"
+                    }
                   </Text>
                   <Box
                     display={"flex"}
@@ -1552,9 +1562,14 @@ useEffect(() => {
                   Select a group to view messages.
                 </Text>
               ) : messages.length === 0 ? (
-                <Text textAlign="center" color="gray.500" mt="4">
-                  No messages yet. Be the first to send a message!
-                </Text>
+                <Box>
+                  <Text textAlign="center" color="gray.500" mt="4">
+                    No messages yet. Be the first to send a message!
+                  </Text>
+                  <Text textAlign="center" color="gray.400" mt="2" fontSize="sm">
+                    Debug: messages.length = {messages.length}, selectedActivityId = {selectedActivityId}
+                  </Text>
+                </Box>
               ) : (
                 messages.map((message) => (
                   <ChatMessage key={message.id} userId={`${userData?.id}`} message={message} />
