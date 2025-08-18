@@ -224,7 +224,7 @@ export default function VendorProfileBanner({ userData }: { userData: UserData }
   const [isBillingLoading, setIsBillingLoading] = useState(false);
 
   useEffect(() => {
-    if (modalStep === "payment") {
+    if (modalStep === "payment" && userData?.email) {
       setIsBillingLoading(true);
       (async () => {
         try {
@@ -234,7 +234,7 @@ export default function VendorProfileBanner({ userData }: { userData: UserData }
             setBillingDetails({
               firstName: json.data.first_name || "",
               lastName: json.data.last_name || "",
-              email: json.data.email || "",
+              email: json.data.email || (userData?.email || ''),
               phone: json.data.phone || "",
               city: json.data.city || "",
               zip: json.data.zip || "",
