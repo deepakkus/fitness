@@ -128,8 +128,8 @@ export async function POST(request: NextRequest) {
     const isProduction = process.env.NODE_ENV === 'production';
     const isVercel = process.env.VERCEL === '1';
     
-    // Remove strict size limitations for now - restore original functionality
-    const MAX_FILE_SIZE_MB = 50; // Reasonable 50MB limit
+    // Restore original functionality - no artificial limits
+    const MAX_FILE_SIZE_MB = 100; // Large limit to avoid issues
     const contentLength = request.headers.get('content-length');
     
     console.log("=== API Upload Debug ===");
@@ -328,18 +328,13 @@ export async function POST(request: NextRequest) {
 
     // Handle single image upload
     if (image) {
+      console.log("Processing single image upload...");
+      console.log("Image size:", (image.size / (1024 * 1024)).toFixed(2) + "MB");
+      
       const imageBlob = await processImageToBlob(image, targetSize);
 
       if (!imageBlob) {
         return NextResponse.json({ error: "Failed to process image. Missing Blob" }, { status: 500 });
-      }
-
-      // Remove overly strict 65KB limit - let the database handle size constraints
-      if (imageBlob.length > 10 * 1024 * 1024) { // 10MB reasonable limit
-        return NextResponse.json(
-          { error: "Image file too large. Please use a smaller image." },
-          { status: 400 }
-        );
       }
 
       const extension = "avif";
