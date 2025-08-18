@@ -124,6 +124,20 @@ async function binarySearchCompression(
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if we're in production (Vercel) or development
+    const isProduction = process.env.NODE_ENV === 'production';
+    const isVercel = process.env.VERCEL === '1';
+    
+    // Remove strict size limitations for now - restore original functionality
+    const MAX_FILE_SIZE_MB = 50; // Reasonable 50MB limit
+    const contentLength = request.headers.get('content-length');
+    
+    console.log("=== API Upload Debug ===");
+    console.log("Environment:", isProduction ? "Production" : "Development");
+    console.log("Is Vercel:", isVercel);
+    console.log("Content-Length header:", contentLength);
+    console.log("Max file size:", MAX_FILE_SIZE_MB + "MB");
+
     const formData = await request.formData();
     const bucket_name = formData.get("bucket_name") as string;
     const imageList = formData.getAll("imagelist") as File[];
@@ -136,8 +150,19 @@ export async function POST(request: NextRequest) {
     const activity_id = formData.get("activity_id") as string | null;
     const product_id = formData.get("product_id") as string | null;
     const achievement_id = formData.get("achievement_id") as string | null;
-    const MAX_FILE_SIZE_MB = 100; // Max 100MB for video/PDF
     const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
+    console.log("Bucket name:", bucket_name);
+    console.log("Activity ID:", activity_id);
+    console.log("Product ID:", product_id);
+    console.log("Message ID:", message_id);
+    console.log("Achievement ID:", achievement_id);
+    console.log("Image files:", image ? 1 : 0);
+    console.log("Image list files:", imageList.length);
+    console.log("Video files:", video ? 1 : 0);
+    console.log("Video list files:", videoList.length);
+    console.log("PDF files:", pdf ? 1 : 0);
+    console.log("PDF list files:", pdfList.length);
 
     if (!image && imageList.length === 0 && !video && videoList.length === 0 && !pdf && pdfList.length === 0) {
       return NextResponse.json({ error: "Image Route- Missing Image " }, { status: 401 });
@@ -309,10 +334,11 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Failed to process image. Missing Blob" }, { status: 500 });
       }
 
-      if (imageBlob.length > 65535) {
+      // Remove overly strict 65KB limit - let the database handle size constraints
+      if (imageBlob.length > 10 * 1024 * 1024) { // 10MB reasonable limit
         return NextResponse.json(
-          { error: "Failed to process image. image exceeded Size despite compression efforts" },
-          { status: 500 }
+          { error: "Image file too large. Please use a smaller image." },
+          { status: 400 }
         );
       }
 
@@ -349,13 +375,18 @@ export async function POST(request: NextRequest) {
           },
         });
       } else if (bucket_name === "activities") {
+        console.log("Processing activities image upload...");
+        console.log("Activity ID from form:", activity_id);
+        console.log("Activity ID type:", typeof activity_id);
+        
         const newActivityMedia = await prisma.activity_media.create({
           data: {
             name: filePath,
-            activity_id: parseInt(`${activity_id}`),
+            activity_id: BigInt(activity_id || 0),
           },
           select: { id: true },
         });
+        console.log("Created activity media record:", newActivityMedia);
 
         await prisma.activity_media_blobs.create({
           data: {
@@ -363,6 +394,7 @@ export async function POST(request: NextRequest) {
             image_blob: imageBlob,
           },
         });
+        console.log("Created activity media blob record");
       } else if (bucket_name === "products") {
         const newProductMedia = await prisma.product_media.create({
           data: {
@@ -444,13 +476,18 @@ export async function POST(request: NextRequest) {
               },
             });
           } else if (bucket_name === "activities") {
+            console.log("Processing activities multiple image upload...");
+            console.log("Activity ID from form (multiple):", activity_id);
+            console.log("Activity ID type (multiple):", typeof activity_id);
+            
             const newActivityMedia = await prisma.activity_media.create({
               data: {
                 name: filePath,
-                activity_id: parseInt(`${activity_id}`),
+                activity_id: BigInt(activity_id || 0),
               },
               select: { id: true },
             });
+            console.log("Created activity media record for multiple images:", newActivityMedia);
 
             await prisma.activity_media_blobs.create({
               data: {
@@ -458,6 +495,7 @@ export async function POST(request: NextRequest) {
                 image_blob: imageBlob,
               },
             });
+            console.log("Created activity media blob record for multiple images");
           } else if (bucket_name === "products") {
             const newProductMedia = await prisma.product_media.create({
               data: {
