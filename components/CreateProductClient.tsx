@@ -72,7 +72,7 @@ interface FormData {
   images: File[];
   imagesLink: { url: string; name: string }[];
   videos: File[];
-  videosLink: string[];
+  videosLink: { url: string; mediaId?: string; name: string }[];
   pdfs: File[];
   pdfsLink: BackendDoc[];
   documents: File[];
@@ -92,7 +92,7 @@ export default function CreateProduct() {
     images: [] as File[],
     imagesLink: [] as { url: string; name: string }[],
     videos: [] as File[],
-    videosLink: [] as string[],
+    videosLink: [] as { url: string; mediaId?: string; name: string }[],
     pdfs: [] as File[],
     pdfsLink: [] as BackendDoc[],
     price: "",
@@ -150,15 +150,54 @@ export default function CreateProduct() {
       try {
         const res = await axios.get(`/api/products/${productId}`);
         const data = res.data?.data?.[0];
+        console.log("API Response:", res.data);
+        console.log("Data object:", data);
         console.log("Product data loaded:", {
           name: data?.name,
           pdfs: data?.pdfs,
           documents: data?.documents,
+          videos: data?.videos,
+          videosLength: data?.videos?.length,
           pdfsLink: Array.isArray(data?.pdfs) ? data.pdfs.map((pdf: { name: string, mediaId: string }) => ({ name: pdf.name, mediaId: pdf.mediaId })) : [],
           docsLink: Array.isArray(data?.documents) ? data.documents.map((doc: { name: string, mediaId: string }) => ({ name: doc.name, mediaId: doc.mediaId })) : []
         });
         
         if (data && isMounted) {
+          const processedVideosLink = Array.isArray(data.videos) ? data.videos.map((vid: { url: string, mediaId?: string, name?: string }) => ({
+            url: vid.url,
+            mediaId: vid.mediaId,
+            name: vid.name || vid.url.split('/').pop() || 'Video'
+          })) : [];
+          
+          // Remove duplicates based on mediaId or name
+          const uniqueVideosLink = processedVideosLink.filter((video: any, index: number, self: any[]) => {
+            if (video.mediaId) {
+              // If mediaId exists, use it for deduplication
+              return index === self.findIndex((v: any) => v.mediaId === video.mediaId);
+            } else {
+              // If no mediaId, use name for deduplication
+              return index === self.findIndex((v: any) => v.name === video.name);
+            }
+          });
+          
+          console.log("Duplicate removal check:", {
+            original: processedVideosLink.length,
+            unique: uniqueVideosLink.length,
+            removed: processedVideosLink.length - uniqueVideosLink.length
+          });
+          
+          // Check for duplicates
+          const videoNames = processedVideosLink.map((v: any) => v.name);
+          const uniqueNames = Array.from(new Set(videoNames));
+          console.log("Video names check:", {
+            original: videoNames,
+            unique: uniqueNames,
+            hasDuplicates: videoNames.length !== uniqueNames.length
+          });
+          
+          // Temporarily use original data to see if duplicate removal is the issue
+          const finalVideosLink = uniqueVideosLink; // processedVideosLink;
+          
           setProductFormData((prev) => ({
             ...prev,
             title: data.name || "",
@@ -167,7 +206,7 @@ export default function CreateProduct() {
             imagesLink: Array.isArray(data.images)
               ? data.images.map((img: { url: string, name: string }) => ({ url: img.url, name: img.name }))
               : [],
-            videosLink: Array.isArray(data.videos) ? data.videos.map((vid: { url: string }) => vid.url) : [],
+            videosLink: finalVideosLink,
             pdfsLink: Array.isArray(data.pdfs) ? data.pdfs.map((pdf: { name: string, mediaId: string }) => ({ name: pdf.name, mediaId: pdf.mediaId })) : [],
             docsLink: Array.isArray(data.documents) ? data.documents.map((doc: { name: string, mediaId: string }) => ({ name: doc.name, mediaId: doc.mediaId })) : [],
           }));
@@ -340,22 +379,51 @@ export default function CreateProduct() {
       console.log('video upload');
       const files = Array.from(e.target.files || []);
       if (files.length === 0) return;
-      // Validate each file
-      // for (const file of files) {
-      //   const error = validateImage(file);
-      //   if (error) {
-      //     toast({
-      //       title: "Video Error",
-      //       description: error.message,
-      //       status: "error",
-      //       duration: 3000,
-      //     });
-      //     return;
-      //   }
-      // }
+      
+      // Validate video files
+      const maxSize = 100 * 1024 * 1024; // 100MB
+      const allowedTypes = ['video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/flv', 'video/webm'];
+      const maxVideos = 10; // Maximum number of videos allowed
+      
+      if (productFormData.videos.length + files.length > maxVideos) {
+        toast({
+          title: "Video Error",
+          description: `Maximum ${maxVideos} videos allowed. You can upload ${maxVideos - productFormData.videos.length} more videos.`,
+          status: "error",
+          duration: 3000,
+        });
+        return;
+      }
+      
+      for (const file of files) {
+        if (file.size > maxSize) {
+          toast({
+            title: "Video Error",
+            description: `${file.name} is too large. Maximum size is 100MB.`,
+            status: "error",
+            duration: 3000,
+          });
+          return;
+        }
+        
+        if (!allowedTypes.includes(file.type)) {
+          toast({
+            title: "Video Error",
+            description: `${file.name} is not a supported video format.`,
+            status: "error",
+            duration: 3000,
+          });
+          return;
+        }
+      }
 
       const newVideos = [...productFormData.videos, ...files];
-      const newVideosLink = [...productFormData.videosLink, ...files.map(file => URL.createObjectURL(file))];
+      // Only add new videos to videosLink, don't mix with existing videos
+      const newVideosLink = [...productFormData.videosLink, ...files.map(file => ({
+        url: URL.createObjectURL(file),
+        name: file.name,
+        mediaId: `new-${file.name}-${Date.now()}` // Use a unique identifier for new videos
+      }))];
       setProductFormData(prev => ({
       ...prev,
       videos: newVideos,
@@ -365,15 +433,22 @@ export default function CreateProduct() {
 
 
     const VideoUploaderHandleDelete = (index: number) => {
-    // const VideoUploaderUpdated = [...VideoUploaderFiles];
-    // VideoUploaderUpdated.splice(index, 1);
-    // setVideoUploaderFiles(VideoUploaderUpdated);
-
     const newVideos = [...productFormData.videos];
     const newLinks = [...productFormData.videosLink];
-    URL.revokeObjectURL(newLinks[index]);  
+    
+    // Remove the video file
     newVideos.splice(index, 1);
-    newLinks.splice(index, 1);
+    
+    // Remove the corresponding blob URL from videosLink
+    // Newly uploaded videos are added to the end of videosLink
+    const existingVideosCount = newLinks.length - productFormData.videos.length;
+    const linkIndex = existingVideosCount + index;
+    
+    if (linkIndex < newLinks.length && newLinks[linkIndex] && newLinks[linkIndex].url.startsWith('blob:')) {
+      URL.revokeObjectURL(newLinks[linkIndex].url);
+      newLinks.splice(linkIndex, 1);
+    }
+    
     setProductFormData((prevData) => ({
       ...prevData,
       videos: newVideos,
@@ -563,78 +638,114 @@ export default function CreateProduct() {
                   status: "loading",
                   duration: 5000,
                 });
-                 if (productFormData.videos.length === 1) {
+                
+                const videoFormData = new FormData();
+                
+                if (productFormData.videos.length === 1) {
                     // Single video upload
                     videoFormData.append("video", productFormData.videos[0]);
-                    } else {
-                    // Multiple images upload
-                      productFormData.videos.forEach((video) => {
-                      videoFormData.append("videolist", video); // Use "videolist" key for multiple files
+                } else {
+                    // Multiple videos upload
+                    productFormData.videos.forEach((video) => {
+                        videoFormData.append("videolist", video); // Use "videolist" key for multiple files
                     });
                 }
-              videoFormData.append("bucket_name", "products");
-              videoFormData.append("product_id", product_id);
-              try {
-                const videoResponse = await fetch("/api/images", {
-                  method: "POST",
-                  body: videoFormData,
-                  headers,
-                });
-                if (!videoResponse.ok) {
-                  throw new Error(`Video upload failed`);
+                
+                videoFormData.append("bucket_name", "products");
+                videoFormData.append("product_id", product_id);
+                
+                try {
+                    const videoResponse = await fetch("/api/images", {
+                        method: "POST",
+                        body: videoFormData,
+                        headers,
+                    });
+                    
+                    if (!videoResponse.ok) {
+                        const errorData = await videoResponse.json().catch(() => ({}));
+                        throw new Error(`Video upload failed: ${errorData.error || videoResponse.statusText}`);
+                    }
+                    
+                    const responseData = await videoResponse.json();
+                    console.log("Video upload response:", responseData);
+                    
+                    toast({
+                        title: `Videos uploaded successfully!`,
+                        status: "success",
+                        duration: 3000,
+                    });
+                    
+                } catch (error) {
+                    console.error("Error uploading videos:", error);
+                    toast({
+                        title: `Uploading Videos failed`,
+                        description: error instanceof Error ? error.message : "Unknown error occurred",
+                        status: "error",
+                        duration: 5000,
+                    });
+                    // Don't refresh the page, let user try again
+                    return;
                 }
-                if (videoResponse.ok) {
-                }
-              } catch (error) {
-                console.error("Error uploading video", error);
-                toast({
-                  title: `Uploading Videos.. failed..`,
-                  status: "error",
-                });
-                router.refresh();
-              }
-            } 
+            }
             if(!productId) 
             {
               console.log('new prod--'+productFormData.documents.length);
             }
             //process pdf upload
-               if (productFormData.pdfs.length >= 1){
+            if (productFormData.pdfs.length >= 1){
                 toast({
-                  title: `Uploading Pdfs.. pls wait..`,
-                  status: "loading",
-                  duration: 5000,
+                    title: `Uploading PDFs.. pls wait..`,
+                    status: "loading",
+                    duration: 5000,
                 });
-                 if (productFormData.pdfs.length === 1) {
-                    // Single video upload
+                
+                const pdfFormData = new FormData();
+                
+                if (productFormData.pdfs.length === 1) {
+                    // Single PDF upload
                     pdfFormData.append("pdf", productFormData.pdfs[0]);
-                    } else {
-                    // Multiple images upload
-                      productFormData.pdfs.forEach((pdf) => {
-                      pdfFormData.append("pdflist", pdf); // Use "videolist" key for multiple files
+                } else {
+                    // Multiple PDFs upload
+                    productFormData.pdfs.forEach((pdf) => {
+                        pdfFormData.append("pdflist", pdf); // Use "pdflist" key for multiple files
                     });
                 }
-              pdfFormData.append("bucket_name", "products");
-              pdfFormData.append("product_id", product_id);
-              try {
-                const pdfResponse = await fetch("/api/images", {
-                  method: "POST",
-                  body: pdfFormData,
-                  headers,
-                });
-                if (!pdfResponse.ok) {
-                  throw new Error(`Video upload failed`);
+                
+                pdfFormData.append("bucket_name", "products");
+                pdfFormData.append("product_id", product_id);
+                
+                try {
+                    const pdfResponse = await fetch("/api/images", {
+                        method: "POST",
+                        body: pdfFormData,
+                        headers,
+                    });
+                    
+                    if (!pdfResponse.ok) {
+                        const errorData = await pdfResponse.json().catch(() => ({}));
+                        throw new Error(`PDF upload failed: ${errorData.error || pdfResponse.statusText}`);
+                    }
+                    
+                    const responseData = await pdfResponse.json();
+                    console.log("PDF upload response:", responseData);
+                    
+                    toast({
+                        title: `PDFs uploaded successfully!`,
+                        status: "success",
+                        duration: 3000,
+                    });
+                    
+                } catch (error) {
+                    console.error("Error uploading PDFs:", error);
+                    toast({
+                        title: `Uploading PDFs failed`,
+                        description: error instanceof Error ? error.message : "Unknown error occurred",
+                        status: "error",
+                        duration: 5000,
+                    });
+                    // Don't refresh the page, let user try again
+                    return;
                 }
-                if (pdfResponse.ok) {
-                }
-              } catch (error) {
-                console.error("Error uploading pdf", error);
-                toast({
-                  title: `Uploading Pdfs.. failed..`,
-                  status: "error",
-                });
-                router.refresh();
-              }
             }
             // Upload documents (txt/doc/docx)
             if (productFormData.documents.length > 0) {
@@ -1186,9 +1297,77 @@ const DocumentUploaderHandleDelete = (index: number) => {
                 </Box>
               </Box>
               <Box display={"flex"} flexDir={"column"} gap="10px">
+                {/* Display existing videos from backend */}
+                {productFormData.videosLink && productFormData.videosLink
+                  .filter(video => video.mediaId && !video.mediaId.startsWith('new-')) // Only show existing videos
+                  .map((video, idx) => (
+                  <Box
+                    key={`existing-video-${idx}`}
+                    display={"flex"}
+                    justifyContent={"space-between"}
+                    gap="10px"
+                    bgColor={"#FFF"}
+                    p={"10px"}
+                    border={"1px solid #CBD5E1"}
+                    borderRadius={"6px"}
+                  >
+                    <Text noOfLines={1}>{video.name || video.url.split('/').pop() || `Video ${idx + 1}`}</Text>
+                    <Box display={"flex"} gap="10px">
+                      <Button
+                        size="md"
+                        paddingX="44px"
+                        borderRadius="3px"
+                        colorScheme="#F9690E"
+                        onClick={() => window.open(video.url, '_blank')}
+                        variant="link"
+                      >
+                        View
+                      </Button>
+                      <Button
+                        size="md"
+                        paddingX="44px"
+                        borderRadius="3px"
+                        colorScheme="#F9690E"
+                        onClick={async () => {
+                          try {
+                            console.log('Deleting video:', video);
+                            if (video.mediaId) {
+                              // Backend delete for existing videos
+                              console.log('Deleting existing video with mediaId:', video.mediaId);
+                              await axios.delete(`/api/products/${productId}/videos`, {
+                                data: { mediaId: video.mediaId },
+                                withCredentials: true,
+                              });
+                              setProductFormData(prev => ({
+                                ...prev,
+                                videosLink: prev.videosLink.filter((_, i) => i !== idx),
+                              }));
+                              toast({ title: 'Video deleted successfully', status: 'success' });
+                            } else {
+                              // Local file, just remove from state
+                              console.log('Removing local video file');
+                              setProductFormData(prev => ({
+                                ...prev,
+                                videosLink: prev.videosLink.filter((_, i) => i !== idx),
+                              }));
+                              toast({ title: 'Video removed', status: 'success' });
+                            }
+                          } catch (err) {
+                            console.error('Error deleting video:', err);
+                            toast({ title: 'Error deleting video', status: 'error' });
+                          }
+                        }}
+                        variant="link"
+                      >
+                        Delete
+                      </Button>
+                    </Box>
+                  </Box>
+                ))}
+                {/* Display newly uploaded videos */}
                 {productFormData.videos.map((file, index) => (
                   <Box
-                    key={index}
+                    key={`new-video-${index}`}
                     display={"flex"}
                     justifyContent={"space-between"}
                     gap="10px"
@@ -1550,293 +1729,401 @@ const DocumentUploaderHandleDelete = (index: number) => {
               </Box>
             )}
             {activeStep === 2 && (
-              <Box display={"flex"} flexDir={"column"} gap="20px" w="full">
-                <Box
-                  display={"flex"}
-                  flexDir={{
-                    base: "column",
-                    md: "row",
-                  }}
-                  bgColor="#FFF"
-                  border={"1px solid #E2E8F0"}
-                  borderRadius={"12px"}
-                  borderBottomRadius={"0px"}
-                  overflow={"hidden"}
-                >
-                  {/* Main Content - Post Review */}
-                  <Box w={"full"}>
-                    <Box
-                      position={"relative"}
-                      px={{ base: "20px", md: "30px" }}
-                      borderBottom={"1px solid #E2E8F0"}
-                      flex={"1"}
-                    >
-                      {/* Product Title  */}
-                      <Text
-                        fontSize={"30px"}
-                        fontWeight={"700"}
-                        color="#334155"
-                        mt={"20px"}
-                        mb={"20px"}
+              <>
+                {console.log("Preview step debugging:", {
+                  activeStep,
+                  videosCount: productFormData?.videos?.length || 0,
+                  videosLinkCount: productFormData?.videosLink?.length || 0,
+                  videosLinkData: productFormData?.videosLink,
+                  shouldShowVideos: (Array.isArray(productFormData?.videos) && productFormData.videos.length > 0) ||
+                                   (Array.isArray(productFormData?.videosLink) && productFormData.videosLink.length > 0)
+                })}
+                <Box display={"flex"} flexDir={"column"} gap="20px" w="full">
+                  <Box
+                    display={"flex"}
+                    flexDir={{
+                      base: "column",
+                      md: "row",
+                    }}
+                    bgColor="#FFF"
+                    border={"1px solid #E2E8F0"}
+                    borderRadius={"12px"}
+                    borderBottomRadius={"0px"}
+                    overflow={"hidden"}
+                  >
+                    {/* Main Content - Post Review */}
+                    <Box w={"full"}>
+                      <Box
+                        position={"relative"}
+                        px={{ base: "20px", md: "30px" }}
+                        borderBottom={"1px solid #E2E8F0"}
+                        flex={"1"}
                       >
-                        {productFormData.title}
-                      </Text>
-                    </Box>
-                    <Grid
-                      templateColumns={{
-                        base: "repeat(auto-fit, minmax(100px, 1fr))",
-                        md: "repeat(auto-fit, minmax(250px, 1fr))",
-                      }}
-                      gap="10px"
-                      mt="20px"
-                      mx="20px"
-                      py="10px"
-                    >
-                      {/* Uploaded images */}
-                      {productFormData.images.map((image, index) => (
-                        <GridItem key={`uploaded-${index}`}>
-                          <Image
-                            src={`${URL.createObjectURL(image)}`}
-                            alt={`Image ${index + 1}`}
-                            width="100%"
-                            height="250px"
-                            objectFit="cover"
-                            borderRadius="8px"
-                          />
-                        </GridItem>
-                      ))}
-                      {/* Backend images */}
-                      {productFormData.imagesLink.map((image, index) => (
-                        <GridItem key={`link-${index}`}>
-                          <Image
-                            src={image.url}
-                            alt={`Image ${index + 1}`}
-                            width="100%"
-                            height="250px"
-                            objectFit="cover"
-                            borderRadius="8px"
-                          />
-                        </GridItem>
-                      ))}
-                    </Grid>
-                    {/* Post Description */}
-                    <Box
-                      pt={"20px"}
-                      // pb={"10px"}
-                      // maxWidth="745px"
-                      px={{ base: "20px", md: "30px" }}
-                      // mx="20px"
-                      display={"flex"}
-                      justifyContent={"center"}
-                      mb={"15px"}
-                    >
-                      <QuillOutput
-                        htmlContent={productFormData.description}
-                        style={{
-                          color: "#64748B",
-                          fontSize: "16px",
-                          textAlign: "left",
-                          width: "100%",
+                        {/* Product Title  */}
+                        <Text
+                          fontSize={"30px"}
+                          fontWeight={"700"}
+                          color="#334155"
+                          mt={"20px"}
+                          mb={"20px"}
+                        >
+                          {productFormData.title}
+                        </Text>
+                      </Box>
+                      <Grid
+                        templateColumns={{
+                          base: "repeat(auto-fit, minmax(100px, 1fr))",
+                          md: "repeat(auto-fit, minmax(250px, 1fr))",
                         }}
-                      />
+                        gap="10px"
+                        mt="20px"
+                        mx="20px"
+                        py="10px"
+                      >
+                        {/* Uploaded images */}
+                        {productFormData.images.map((image, index) => (
+                          <GridItem key={`uploaded-${index}`}>
+                            <Image
+                              src={`${URL.createObjectURL(image)}`}
+                              alt={`Image ${index + 1}`}
+                              width="100%"
+                              height="250px"
+                              objectFit="cover"
+                              borderRadius="8px"
+                            />
+                          </GridItem>
+                        ))}
+                        {/* Backend images */}
+                        {productFormData.imagesLink.map((image, index) => (
+                          <GridItem key={`link-${index}`}>
+                            <Image
+                              src={image.url}
+                              alt={`Image ${index + 1}`}
+                              width="100%"
+                              height="250px"
+                              objectFit="cover"
+                              borderRadius="8px"
+                            />
+                          </GridItem>
+                        ))}
+                      </Grid>
+                      {/* Post Description */}
+                      <Box
+                        pt={"20px"}
+                        // pb={"10px"}
+                        // maxWidth="745px"
+                        px={{ base: "20px", md: "30px" }}
+                        // mx="20px"
+                        display={"flex"}
+                        justifyContent={"center"}
+                        mb={"15px"}
+                      >
+                        <QuillOutput
+                          htmlContent={productFormData.description}
+                          style={{
+                            color: "#64748B",
+                            fontSize: "16px",
+                            textAlign: "left",
+                            width: "100%",
+                          }}
+                        />
+                      </Box>
+
+                      {/* Video  */}
+                      {(() => {
+                        const hasNewVideos = Array.isArray(productFormData?.videos) && productFormData.videos.length > 0;
+                        const hasExistingVideos = Array.isArray(productFormData?.videosLink) && productFormData.videosLink.filter(video => video.mediaId && !video.mediaId.startsWith('new-')).length > 0;
+                        const shouldShowVideos = hasNewVideos || hasExistingVideos;
+                        
+                        console.log("Main video section condition check:", {
+                          hasNewVideos,
+                          hasExistingVideos,
+                          shouldShowVideos,
+                          videosArray: productFormData?.videos,
+                          videosLinkArray: productFormData?.videosLink,
+                          existingVideosCount: productFormData?.videosLink?.filter(video => video.mediaId && !video.mediaId.startsWith('new-')).length || 0
+                        });
+                        
+                        return shouldShowVideos;
+                      })() &&(
+                        <>
+                          <Box
+                        pt={"20px"}
+                        pb={"40px"}
+                        // maxWidth="745px"
+                        px={{ base: "20px", md: "30px" }}
+                      // mx="20px"
+                      // display={"flex"}
+                      // justifyContent={"center"}
+                      >
+                        <Text
+                          fontSize={"30px"}
+                          fontWeight={"700"}
+                          // borderBottom={"1px solid #E2E8F0"}
+                          color="#0F172A"
+                        // px="20px"
+                        // py={"10px"}
+
+                        >
+                          Course Materials Videos
+                        </Text>
+                        <Flex wrap="wrap" gap={4}>
+                          {/* Show existing videos from backend */}
+                          {(() => {
+                            const existingVideos = Array.isArray(productFormData?.videosLink) ? 
+                              productFormData.videosLink.filter(video => video.mediaId && !video.mediaId.startsWith('new-')) : [];
+                            console.log("Existing videos for display:", existingVideos);
+                            return existingVideos.map((video, index) => (
+                            <Box
+                              key={`existing-video-${index}`}
+                              as="video"
+                              src={video.url}
+                              controls
+                              width="48%"
+                              borderRadius="md"
+                              boxShadow="md"
+                              my={"20px"}
+                            />
+                          ));
+                          })()}
+                          {/* Show newly uploaded videos */}
+                          {(() => {
+                            const newVideos = Array.isArray(productFormData?.videos) ? productFormData.videos : [];
+                            console.log("New videos for display:", newVideos);
+                            return newVideos.map((video, index) => (
+                            <Box
+                              key={`new-video-${index}`}
+                              as="video"
+                              src={URL.createObjectURL(video)}
+                              controls
+                              width="48%"
+                              borderRadius="md"
+                              boxShadow="md"
+                              my={"20px"}
+                            />
+                          ));
+                          })()}
+                        </Flex>
+                      </Box>
+                        </>
+                      )}
+                      
                     </Box>
 
-                    {/* Video  */}
-                    {Array.isArray(productFormData?.videos) && productFormData.videos.length > 0 &&(
-                      <>
-                        <Box
-                      pt={"20px"}
-                      pb={"40px"}
-                      // maxWidth="745px"
-                      px={{ base: "20px", md: "30px" }}
-                    // mx="20px"
-                    // display={"flex"}
-                    // justifyContent={"center"}
+                    {/* Sidebar - Post Details */}
+                    <Box
+                      w={"full"}
+                      maxWidth={"350px"}
+                      bgColor={"#FFF"}
+                      borderLeft={"1px solid #E2E8F0"}
                     >
-                      <Text
-                        fontSize={"30px"}
+
+                      <Box
+                        px="20px"
+                        py={"10px"}
+                        borderBottom={"1px solid #E2E8F0"}
+                        display={"flex"}
+                        flexDir={"column"}
+                        gap={"15px"}
+                      >
+                        <Flex color="#0F172A" fontSize="20px" fontWeight="700" alignItems="center">
+                          <Text>Price:</Text>
+                          <Text color="#F9690E" ml="2" fontSize="35px">${parseFloat(productFormData.price).toFixed(2)}</Text>
+                        </Flex>
+                      </Box>
+                      {websiteLinks.length > 0 &&(
+                          <><Text
+                        fontSize={"18px"}
                         fontWeight={"700"}
                         // borderBottom={"1px solid #E2E8F0"}
                         color="#0F172A"
-                      // px="20px"
-                      // py={"10px"}
+                        px="20px"
+                        py={"10px"}
 
                       >
-                        Course Materials Videos
+                        Course Materials URL
                       </Text>
-                      <Flex wrap="wrap" gap={4}>
-                        {productFormData.videos.map((video, index) => (
-                          <Box
-                            key={index}
-                            as="video"
-                            src={URL.createObjectURL(video)}
-                            controls
-                            width="48%"
-                            borderRadius="md"
-                            boxShadow="md"
-                            my={"20px"}
-                          />
+                      <OrderedList spacing={2} px={"20px"}>
+                        {websiteLinks.map((link, index) => (
+                          <ListItem key={index}>
+                            <Link
+                              href={link}
+                              color="blue.500"
+                              isExternal
+                              wordBreak="break-all"
+                            >
+                              {link}
+                            </Link>
+                          </ListItem>
                         ))}
-                      </Flex>
-                    </Box>
+                      </OrderedList>
                       </>
-                    )}
-                    
-                  </Box>
-
-                  {/* Sidebar - Post Details */}
-                  <Box
-                    w={"full"}
-                    maxWidth={"350px"}
-                    bgColor={"#FFF"}
-                    borderLeft={"1px solid #E2E8F0"}
-                  >
-
-                    <Box
-                      px="20px"
-                      py={"10px"}
-                      borderBottom={"1px solid #E2E8F0"}
-                      display={"flex"}
-                      flexDir={"column"}
-                      gap={"15px"}
-                    >
-                      <Flex color="#0F172A" fontSize="20px" fontWeight="700" alignItems="center">
-                        <Text>Price:</Text>
-                        <Text color="#F9690E" ml="2" fontSize="35px">${parseFloat(productFormData.price).toFixed(2)}</Text>
-                      </Flex>
-                    </Box>
-                    {websiteLinks.length > 0 &&(
-                        <><Text
-                      fontSize={"18px"}
-                      fontWeight={"700"}
-                      // borderBottom={"1px solid #E2E8F0"}
-                      color="#0F172A"
-                      px="20px"
-                      py={"10px"}
-
-                    >
-                      Course Materials URL
-                    </Text>
-                    <OrderedList spacing={2} px={"20px"}>
-                      {websiteLinks.map((link, index) => (
-                        <ListItem key={index}>
-                          <Link
-                            href={link}
-                            color="blue.500"
-                            isExternal
-                            wordBreak="break-all"
-                          >
-                            {link}
-                          </Link>
-                        </ListItem>
-                      ))}
-                    </OrderedList>
-                    </>
-                    )}
-                    
-                    {(Array.isArray(productFormData?.pdfs) && productFormData.pdfs.length > 0) || 
-                     (Array.isArray(productFormData?.pdfsLink) && productFormData.pdfsLink.length > 0) &&(
-                      console.log("Rendering PDF section:", {
-                        pdfs: productFormData?.pdfs?.length || 0,
-                        pdfsLink: productFormData?.pdfsLink?.length || 0,
-                        pdfsLinkData: productFormData?.pdfsLink
-                      }),
+                      )}
+                      
+                      {(Array.isArray(productFormData?.pdfs) && productFormData.pdfs.length > 0) || 
+                       (Array.isArray(productFormData?.pdfsLink) && productFormData.pdfsLink.length > 0) &&(
+                        console.log("Rendering PDF section:", {
+                          pdfs: productFormData?.pdfs?.length || 0,
+                          pdfsLink: productFormData?.pdfsLink?.length || 0,
+                          pdfsLinkData: productFormData?.pdfsLink
+                        }),
                         <>
                            <Text
-                      fontSize={"18px"}
-                      fontWeight={"700"}
-                      // borderBottom={"1px solid #E2E8F0"}
-                      color="#0F172A"
-                      px="20px"
-                      py={"10px"}
+                        fontSize={"18px"}
+                        fontWeight={"700"}
+                        // borderBottom={"1px solid #E2E8F0"}
+                        color="#0F172A"
+                        px="20px"
+                        py={"10px"}
 
-                    >
-                      Course Materials PDF
-                    </Text>
-                    <OrderedList spacing={2} px={"20px"}>
-                      {/* Show backend PDFs first */}
-                      {Array.isArray(productFormData?.pdfsLink) && productFormData.pdfsLink.map((pdf, index) => (
-                        <ListItem key={`backend-pdf-${index}`}>
-                          <Link
-                            href={`/api/products/${productId}/media/${pdf.mediaId}/pdf`}
-                            color="blue.500"
-                            isExternal
-                            wordBreak="break-all"
-                          >
-                            {pdf.name}
-                          </Link>
-                        </ListItem>
-                      ))}
-                      {/* Show new PDFs */}
-                      {Array.isArray(productFormData?.pdfs) && productFormData.pdfs.map((file, index) => (
-                        <ListItem key={`new-pdf-${index}`}>
-                          <Link
-                            href={URL.createObjectURL(file)}
-                            download={file.name}
-                            color="blue.500"
-                            isExternal
-                            wordBreak="break-all"
-                          >
-                            {file.name}
-                          </Link>
-                        </ListItem>
-                      ))}
-                    </OrderedList>
+                      >
+                        Course Materials PDF
+                      </Text>
+                      <OrderedList spacing={2} px={"20px"}>
+                        {/* Show backend PDFs first */}
+                        {Array.isArray(productFormData?.pdfsLink) && productFormData.pdfsLink.map((pdf, index) => (
+                          <ListItem key={`backend-pdf-${index}`}>
+                            <Link
+                              href={`/api/products/${productId}/media/${pdf.mediaId}/pdf`}
+                              color="blue.500"
+                              isExternal
+                              wordBreak="break-all"
+                            >
+                              {pdf.name}
+                            </Link>
+                          </ListItem>
+                        ))}
+                        {/* Show new PDFs */}
+                        {Array.isArray(productFormData?.pdfs) && productFormData.pdfs.map((file, index) => (
+                          <ListItem key={`new-pdf-${index}`}>
+                            <Link
+                              href={URL.createObjectURL(file)}
+                              download={file.name}
+                              color="blue.500"
+                              isExternal
+                              wordBreak="break-all"
+                            >
+                              {file.name}
+                            </Link>
+                          </ListItem>
+                        ))}
+                      </OrderedList>
                         </>
-                    )}
-                    {(Array.isArray(productFormData?.documents) && productFormData.documents.length > 0) || 
-                     (Array.isArray(productFormData?.docsLink) && productFormData.docsLink.length > 0) &&(
-                      console.log("Rendering Documents section:", {
-                        documents: productFormData?.documents?.length || 0,
-                        docsLink: productFormData?.docsLink?.length || 0,
-                        docsLinkData: productFormData?.docsLink
-                      }),
-                      <>
+                      )}
+                      {(Array.isArray(productFormData?.documents) && productFormData.documents.length > 0) || 
+                       (Array.isArray(productFormData?.docsLink) && productFormData.docsLink.length > 0) &&(
+                        console.log("Rendering Documents section:", {
+                          documents: productFormData?.documents?.length || 0,
+                          docsLink: productFormData?.docsLink?.length || 0,
+                          docsLinkData: productFormData?.docsLink
+                        }),
+                        <>
                            <Text
-                      fontSize={"18px"}
-                      fontWeight={"700"}
-                      // borderBottom={"1px solid #E2E8F0"}
-                      color="#0F172A"
-                      px="20px"
-                      py={"10px"}
-                    >
-                      Course Materials Documents
-                    </Text>
-                    <OrderedList spacing={2} px={"20px"}>
-                      {/* Show backend documents first */}
-                      {Array.isArray(productFormData?.docsLink) && productFormData.docsLink.map((doc, index) => (
-                        <ListItem key={`backend-doc-${index}`}>
-                          <Link
-                            href={`/api/products/${productId}/media/${doc.mediaId}/document`}
-                            color="blue.500"
-                            isExternal
-                            wordBreak="break-all"
+                        fontSize={"18px"}
+                        fontWeight={"700"}
+                        // borderBottom={"1px solid #E2E8F0"}
+                        color="#0F172A"
+                        px="20px"
+                        py={"10px"}
+                      >
+                        Course Materials Documents
+                      </Text>
+                      <OrderedList spacing={2} px={"20px"}>
+                        {/* Show backend documents first */}
+                        {Array.isArray(productFormData?.docsLink) && productFormData.docsLink.map((doc, index) => (
+                          <ListItem key={`backend-doc-${index}`}>
+                            <Link
+                              href={`/api/products/${productId}/media/${doc.mediaId}/document`}
+                              color="blue.500"
+                              isExternal
+                              wordBreak="break-all"
+                            >
+                              {doc.name}
+                            </Link>
+                          </ListItem>
+                        ))}
+                        {/* Show new documents */}
+                        {Array.isArray(productFormData?.documents) && productFormData.documents.map((file, index) => (
+                          <ListItem key={`new-doc-${index}`}>
+                            <Link
+                              href={URL.createObjectURL(file)}
+                              download={file.name}
+                              color="blue.500"
+                              isExternal
+                              wordBreak="break-all"
+                            >
+                              {file.name}
+                            </Link>
+                          </ListItem>
+                        ))}
+                      </OrderedList>
+                        </>
+                      )}
+                      
+                      {/* Video Section in Sidebar */}
+                      {(() => {
+                        const hasNewVideos = Array.isArray(productFormData?.videos) && productFormData.videos.length > 0;
+                        const hasExistingVideos = Array.isArray(productFormData?.videosLink) && productFormData.videosLink.filter(video => video.mediaId && !video.mediaId.startsWith('new-')).length > 0;
+                        const shouldShowVideos = hasNewVideos || hasExistingVideos;
+                        
+                        console.log("Video section condition check:", {
+                          hasNewVideos,
+                          hasExistingVideos,
+                          shouldShowVideos,
+                          videosArray: productFormData?.videos,
+                          videosLinkArray: productFormData?.videosLink,
+                          existingVideosCount: productFormData?.videosLink?.filter(video => video.mediaId && !video.mediaId.startsWith('new-')).length || 0
+                        });
+                        
+                        return shouldShowVideos;
+                      })() &&(
+                        <>
+                          <Text
+                            fontSize={"18px"}
+                            fontWeight={"700"}
+                            color="#0F172A"
+                            px="20px"
+                            py={"10px"}
                           >
-                            {doc.name}
-                          </Link>
-                        </ListItem>
-                      ))}
-                      {/* Show new documents */}
-                      {Array.isArray(productFormData?.documents) && productFormData.documents.map((file, index) => (
-                        <ListItem key={`new-doc-${index}`}>
-                          <Link
-                            href={URL.createObjectURL(file)}
-                            download={file.name}
-                            color="blue.500"
-                            isExternal
-                            wordBreak="break-all"
-                          >
-                            {file.name}
-                          </Link>
-                        </ListItem>
-                      ))}
-                    </OrderedList>
-                      </>
-                    )}
-                   
+                            Course Materials Videos
+                          </Text>
+                          <OrderedList spacing={2} px={"20px"}>
+                            {/* Show existing videos from backend */}
+                            {Array.isArray(productFormData?.videosLink) && productFormData.videosLink
+                              .filter(video => video.mediaId && !video.mediaId.startsWith('new-')) // Only show existing videos
+                              .map((video, index) => (
+                              <ListItem key={`sidebar-existing-video-${index}`}>
+                                <Link
+                                  href={video.url}
+                                  color="blue.500"
+                                  isExternal
+                                  wordBreak="break-all"
+                                >
+                                  {video.name || `Video ${index + 1}`}
+                                </Link>
+                              </ListItem>
+                            ))}
+                            {/* Show newly uploaded videos */}
+                            {Array.isArray(productFormData?.videos) && productFormData.videos.map((file, index) => (
+                              <ListItem key={`sidebar-new-video-${index}`}>
+                                <Link
+                                  href={URL.createObjectURL(file)}
+                                  color="blue.500"
+                                  isExternal
+                                  wordBreak="break-all"
+                                >
+                                  {file.name}
+                                </Link>
+                              </ListItem>
+                            ))}
+                          </OrderedList>
+                        </>
+                      )}
+                     
+                    </Box>
                   </Box>
                 </Box>
-              </Box>
+              </>
             )}
             <Box
               mt="10px"

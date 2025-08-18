@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
       video_blob: videoBuffer,
     },
   });
-} catch (err) {
+} catch (err: any) {
   console.error("Error inserting into product_media_blobs:", err); // ← Log the actual error object
   return NextResponse.json({ error: "DB insert failed", details: err?.message || String(err) }, { status: 500 });
 }
@@ -106,6 +106,7 @@ export async function POST(request: NextRequest) {
   // Add similar logic for messages, activities, etc., if needed
 }
 else if (videoList && videoList.length > 0) {
+  const uploadedVideos = [];
   for (const vid of videoList) {
     if (vid.size > MAX_FILE_SIZE_BYTES) continue;
     const videoBuffer = Buffer.from(await vid.arrayBuffer());
@@ -127,7 +128,17 @@ else if (videoList && videoList.length > 0) {
           video_blob: videoBuffer,
         },
       });
+      
+      uploadedVideos.push(filePath);
     }
+  }
+  
+  if (uploadedVideos.length > 0) {
+    return NextResponse.json({ 
+      success: true, 
+      message: `Successfully uploaded ${uploadedVideos.length} videos`,
+      uploadedFiles: uploadedVideos 
+    }, { status: 201 });
   }
 }
     if (pdf) {
@@ -162,6 +173,7 @@ else if (videoList && videoList.length > 0) {
   // Extend for other bucket names as needed
     }
     else if (pdfList && pdfList.length > 0) {
+  const uploadedPdfs = [];
   for (const doc of pdfList) {
     if (doc.size > MAX_FILE_SIZE_BYTES) continue;
     const pdfBuffer = Buffer.from(await doc.arrayBuffer());
@@ -183,7 +195,17 @@ else if (videoList && videoList.length > 0) {
           pdf_blob: pdfBuffer,
         },
       });
+      
+      uploadedPdfs.push(filePath);
     }
+  }
+  
+  if (uploadedPdfs.length > 0) {
+    return NextResponse.json({ 
+      success: true, 
+      message: `Successfully uploaded ${uploadedPdfs.length} PDFs`,
+      uploadedFiles: uploadedPdfs 
+    }, { status: 201 });
   }
 }
     if (image) {

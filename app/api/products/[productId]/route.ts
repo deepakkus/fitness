@@ -109,6 +109,7 @@ export async function GET(request: NextRequest, { params }: { params: { productI
             product_media_blobs: {
               select: {
                 image_blob: true,
+                video_blob: true,
                 pdf_blob: true,
                 other_blob: true,
               },
@@ -128,7 +129,24 @@ export async function GET(request: NextRequest, { params }: { params: { productI
     }
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
-
+    
+    console.log(`Processing ${products.length} products`);
+    products.forEach((product, index) => {
+      console.log(`Product ${index + 1} (ID: ${product.id}):`);
+      console.log(`  - product_media count: ${product.product_media?.length || 0}`);
+      if (product.product_media) {
+        console.log(`  - All product_media names:`, product.product_media.map((media: any) => media.name));
+        product.product_media.forEach((media: any, mediaIndex: number) => {
+          console.log(`  - Media ${mediaIndex + 1}: name=${media.name}, id=${media.id}, has_blobs=${!!media.product_media_blobs}`);
+          if (media.product_media_blobs) {
+            console.log(`    - image_blob: ${!!media.product_media_blobs.image_blob}`);
+            console.log(`    - video_blob: ${!!media.product_media_blobs.video_blob}`);
+            console.log(`    - pdf_blob: ${!!media.product_media_blobs.pdf_blob}`);
+          }
+        });
+      }
+    });
+    
     const productData = await Promise.all(
       products.map((item: any) => {
         // Only include images with a valid image_blob
@@ -138,9 +156,39 @@ export async function GET(request: NextRequest, { params }: { params: { productI
             const base64 = Buffer.from(media.product_media_blobs.image_blob).toString('base64');
             return { url: `data:image/jpeg;base64,${base64}`, name: media.name };
           });
-        let videos = (item.product_media as { name: string }[]).map((act_media_row: { name: string }) => {
-          return { url: `${baseUrl}/api/images/${act_media_row.name}` };
-        });
+        
+        // Only include videos (files with video extensions and video_blob)
+        let videos = (item.product_media as any[])
+          .filter((media) => {
+            const ext = media.name?.toLowerCase().split('.').pop();
+            const hasVideoBlob = media.product_media_blobs && media.product_media_blobs.video_blob;
+            return ["mp4", "avi", "mov", "wmv", "flv", "webm"].includes(ext) && hasVideoBlob;
+          })
+          .map((media) => {
+            return { 
+              url: `${baseUrl}/api/images/${media.name}`,
+              mediaId: String(media.id),
+              name: media.name
+            };
+          });
+        
+        // Remove duplicates based on mediaId
+        const uniqueVideos = videos.filter((video, index, self) => 
+          index === self.findIndex(v => v.mediaId === video.mediaId)
+        );
+        
+        console.log(`Product ${item.id} - Raw videos:`, videos.length);
+        console.log(`Product ${item.id} - Unique videos:`, uniqueVideos.length);
+        if (videos.length !== uniqueVideos.length) {
+          console.log(`Product ${item.id} - Duplicates found!`);
+          console.log('Raw videos:', videos.map(v => ({ name: v.name, mediaId: v.mediaId })));
+          console.log('Unique videos:', uniqueVideos.map(v => ({ name: v.name, mediaId: v.mediaId })));
+        }
+        
+        // Temporarily use original data to see if duplicate removal is the issue
+        videos = uniqueVideos;
+        console.log(`Product ${item.id} - Final videos to return:`, videos.length);
+        
         // PDF list
         let pdfs = (item.product_media as any[])
           .filter((media) => media.name && media.name.toLowerCase().endsWith('.pdf') && media.product_media_blobs && media.product_media_blobs.pdf_blob)
@@ -260,11 +308,51 @@ export async function GET_pdf(request: NextRequest, { params }: { params: { prod
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename=\"${media.name}\"`,
+        "Content-Disposition": `inline; filename="${media.name}"`,
       },
     });
   } catch (error) {
     return NextResponse.json({ error: "Failed to fetch PDF" }, { status: 500 });
+  }
+}
+
+// Video download/view endpoint
+export async function GET_video(request: NextRequest, { params }: { params: { productId: string, mediaId: string } }) {
+  const { productId, mediaId } = params;
+  if (!productId || !mediaId) {
+    return NextResponse.json({ error: "Missing productId or mediaId" }, { status: 400 });
+  }
+  try {
+    const media = await prisma.product_media.findUnique({
+      where: { id: BigInt(mediaId) },
+      select: {
+        name: true,
+        product_media_blobs: {
+          select: { video_blob: true },
+        },
+      },
+    });
+    if (!media || !media.product_media_blobs || !media.product_media_blobs.video_blob) {
+      return NextResponse.json({ error: "Video not found" }, { status: 404 });
+    }
+    const videoBuffer = Buffer.from(media.product_media_blobs.video_blob);
+    const ext = media.name?.toLowerCase().split('.').pop();
+    let contentType = "video/mp4"; // default
+    if (ext === "avi") contentType = "video/x-msvideo";
+    if (ext === "mov") contentType = "video/quicktime";
+    if (ext === "wmv") contentType = "video/x-ms-wmv";
+    if (ext === "flv") contentType = "video/x-flv";
+    if (ext === "webm") contentType = "video/webm";
+    
+    return new NextResponse(videoBuffer, {
+      status: 200,
+      headers: {
+        "Content-Type": contentType,
+        "Content-Disposition": `inline; filename="${media.name}"`,
+      },
+    });
+  } catch (error) {
+    return NextResponse.json({ error: "Failed to fetch video" }, { status: 500 });
   }
 }
 
