@@ -18,6 +18,14 @@ const prisma = new PrismaClient();
 app.prepare().then(() => {
 
   const server = createServer(async (req, res) => {
+    // Set higher limits for file uploads
+    req.setTimeout(300000); // 5 minutes timeout
+    res.setTimeout(300000); // 5 minutes timeout
+    
+    // Set headers for large file uploads
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Keep-Alive', 'timeout=300');
+    
     // Only use apiLogger in production
     if (!dev) {
       apiLogger(req, res, () => {});
@@ -31,6 +39,17 @@ app.prepare().then(() => {
       res.end("internal server error");
     }
   });
+
+  // Set server limits for large file uploads
+  server.maxHeaderSize = 64 * 1024; // 64KB headers
+  server.maxConnections = 1000;
+  
+  // Increase payload size limit for production
+  if (!dev) {
+    // Production-specific settings
+    server.maxHeaderSize = 128 * 1024; // 128KB headers for production
+    server.maxConnections = 2000;
+  }
 
   const io = new Server(server, {
     path: "/api/socket",
@@ -96,7 +115,7 @@ app.prepare().then(() => {
     socket.on("join_activity_room", (activityId) => {
       const activityRoom = `activity_${activityId}`;
       socket.join(activityRoom);
-      // console.log(`[Socket] Joined activity room: ${activityRoom}`);
+      console.log(`[Socket] Joined activity room: ${activityRoom} for socket ${socket.id}`);
     });
 
     socket.on("user_action", async ({ userId, activityId, actionType, notificationId }) => {
@@ -143,10 +162,11 @@ app.prepare().then(() => {
         return;
       }
           
-      // console.log(`[Socket] User ${socket.userId} sent message in activity ${activityId}`);
+      console.log(`[Socket] User ${socket.userId} sent message in activity ${activityId}, messageId: ${messageId}`);
           
       try {
         const activityRoom = `activity_${activityId}`;
+        console.log(`[Socket] Emitting to room: ${activityRoom}`);
               
         // Emit message ID to the room for real-time updates
         // IMPORTANT: We're explicitly including the activityId for message context
@@ -155,6 +175,8 @@ app.prepare().then(() => {
           activityId,  // Make sure activityId is included
           timestamp: Date.now() 
         });
+        
+        console.log(`[Socket] Emitted new_message_id to room ${activityRoom}`);
         
         // If notification ID is provided, emit notification events to relevant user rooms
         // Notification creation is now handled in the message API

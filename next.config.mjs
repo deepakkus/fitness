@@ -27,16 +27,46 @@ const nextConfig = {
   },
   experimental: {
     optimizePackageImports: ["@chakra-ui/react"],
+    serverComponentsExternalPackages: ['sharp'],
   },
 
   images: {
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: 'fitness-theta-beryl.vercel.app',
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '3000',
         pathname: '/api/images/**',
       },
     ],
+  },
+  
+  // Configure for large file uploads
+  serverRuntimeConfig: {
+    // Increase body size limit for file uploads
+    bodyParser: {
+      sizeLimit: '100mb',
+    },
+  },
+  
+  // Configure API routes for large payloads
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: '/api/:path*',
+      },
+    ];
+  },
+  
+  // Increase payload size limit for production
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.externals.push({
+        'sharp': 'commonjs sharp',
+      });
+    }
+    return config;
   },
 };
 
