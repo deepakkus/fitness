@@ -2218,6 +2218,104 @@ const DocumentUploaderHandleDelete = (index: number) => {
                           </OrderedList>
                         </>
                       )}
+                      
+                      {/* PDF Section in Sidebar */}
+                      {(() => {
+                        const hasNewPdfs = Array.isArray(productFormData?.pdfs) && productFormData.pdfs.length > 0;
+                        const hasExistingPdfs = Array.isArray(productFormData?.pdfsLink) && productFormData.pdfsLink.length > 0;
+                        const shouldShowPdfs = hasNewPdfs || hasExistingPdfs;
+                        
+                        return shouldShowPdfs;
+                      })() && (
+                        <>
+                          <Text
+                            fontSize={"18px"}
+                            fontWeight={"700"}
+                            color="#0F172A"
+                            px="20px"
+                            py={"10px"}
+                          >
+                            Course Materials PDFs
+                          </Text>
+                          <OrderedList spacing={2} px={"20px"}>
+                            {/* Show existing PDFs from backend */}
+                            {Array.isArray(productFormData?.pdfsLink) && productFormData.pdfsLink.map((pdf, index) => (
+                              <ListItem key={`sidebar-existing-pdf-${index}`}>
+                                <Link
+                                  href={`/api/products/${productId}/media/${pdf.mediaId}/pdf`}
+                                  color="blue.500"
+                                  isExternal
+                                  wordBreak="break-all"
+                                >
+                                  {pdf.name}
+                                </Link>
+                              </ListItem>
+                            ))}
+                            {/* Show newly uploaded PDFs */}
+                            {Array.isArray(productFormData?.pdfs) && productFormData.pdfs.map((file, index) => (
+                              <ListItem key={`sidebar-new-pdf-${index}`}>
+                                <Link
+                                  href={URL.createObjectURL(file)}
+                                  color="blue.500"
+                                  isExternal
+                                  wordBreak="break-all"
+                                >
+                                  {file.name}
+                                </Link>
+                              </ListItem>
+                            ))}
+                          </OrderedList>
+                        </>
+                      )}
+                      
+                      {/* Documents Section in Sidebar */}
+                      {(() => {
+                        const hasNewDocs = Array.isArray(productFormData?.documents) && productFormData.documents.length > 0;
+                        const hasExistingDocs = Array.isArray(productFormData?.docsLink) && productFormData.docsLink.length > 0;
+                        const shouldShowDocs = hasNewDocs || hasExistingDocs;
+                        
+                        return shouldShowDocs;
+                      })() && (
+                        <>
+                          <Text
+                            fontSize={"18px"}
+                            fontWeight={"700"}
+                            color="#0F172A"
+                            px="20px"
+                            py={"10px"}
+                          >
+                            Course Materials Documents
+                          </Text>
+                          <OrderedList spacing={2} px={"20px"}>
+                            {/* Show existing documents from backend */}
+                            {Array.isArray(productFormData?.docsLink) && productFormData.docsLink.map((doc, index) => (
+                              <ListItem key={`sidebar-existing-doc-${index}`}>
+                                <Link
+                                  href={`/api/products/${productId}/media/${doc.mediaId}/document`}
+                                  color="blue.500"
+                                  isExternal
+                                  wordBreak="break-all"
+                                >
+                                  {doc.name}
+                                </Link>
+                              </ListItem>
+                            ))}
+                            {/* Show newly uploaded documents */}
+                            {Array.isArray(productFormData?.documents) && productFormData.documents.map((file, index) => (
+                              <ListItem key={`sidebar-new-doc-${index}`}>
+                                <Link
+                                  href={URL.createObjectURL(file)}
+                                  color="blue.500"
+                                  isExternal
+                                  wordBreak="break-all"
+                                >
+                                  {file.name}
+                                </Link>
+                              </ListItem>
+                            ))}
+                          </OrderedList>
+                        </>
+                      )}
                      
                     </Box>
                   </Box>
