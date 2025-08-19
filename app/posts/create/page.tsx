@@ -101,12 +101,20 @@ const CreatepostPagedata = {
   },
 };
 
-const steps = [
-  { title: "Required", description: "Post Details" },
-  { title: "Optional", description: "Post Rules" },
-  { title: "Preview", description: "Review Post" },
-  { title: "Payment", description: "Payment" },
-];
+// Dynamic steps based on sponsored post selection
+const getSteps = (isSponsored: boolean) => {
+  const baseSteps = [
+    { title: "Required", description: "Post Details" },
+    { title: "Optional", description: "Post Rules" },
+    { title: "Preview", description: "Review Post" },
+  ];
+  
+  if (isSponsored) {
+    baseSteps.push({ title: "Payment", description: "Payment" });
+  }
+  
+  return baseSteps;
+};
 
 interface ValidationRules {
   [key: string]: any;
@@ -276,9 +284,9 @@ const validateField = (fieldName: keyof ValidationRules, value: any, context: { 
       if (rules.required && !value) {
         return { field: fieldName, message: 'Start date is required' };
       }
-      //if (new Date(value) < rules.minDate) {
-        //return { field: fieldName, message: 'Start date cannot be in the past' };
-      //}
+      // if (new Date(value) < rules.minDate) {
+      //   return { field: fieldName, message: 'Start date cannot be in the past' };
+      // }
       break;
 
     case 'start_time':
@@ -358,6 +366,7 @@ const PaymentForm = ({
 }) => {
   const stripe = useStripe();
   const elements = useElements();
+  
   return (
     <Box
       bg="#fff"
@@ -523,10 +532,17 @@ const CreatePost = () => {
     // Fetch billing details for logged in user
     const fetchBillingDetails = async () => {
       try {
+        console.log("Fetching billing details...");
+        console.log("Session data:", session);
+        
         const res = await axios.get('/api/billing-details', { withCredentials: true });
+        console.log("Billing details response:", res.data);
+        
         if (res.data && res.data.data) {
           const b = res.data.data;
-          setBillingDetails({
+          console.log("Billing data received:", b);
+          
+          const billingData = {
             firstName: b.first_name || '',
             lastName: b.last_name || '',
             email: b.email || '',
@@ -534,22 +550,57 @@ const CreatePost = () => {
             city: b.city || '',
             zip: b.zip || '',
             address: b.address || '',
-          });
+          };
+          
+          console.log("Setting billing details:", billingData);
+          setBillingDetails(billingData);
           setBillingExists(true);
         } else {
-          setBillingExists(false);
+          console.log("No billing data found, using session data as fallback");
+          // Fallback to session data if no billing details exist
+          if (session?.user) {
+            const fallbackData = {
+              firstName: session.user.name?.split(' ')[0] || '',
+              lastName: session.user.name?.split(' ').slice(1).join(' ') || '',
+              email: session.user.email || '',
+              phone: '',
+              city: '',
+              zip: '',
+              address: '',
+            };
+            console.log("Using fallback billing data:", fallbackData);
+            setBillingDetails(fallbackData);
+            setBillingExists(false);
+          } else {
+            setBillingExists(false);
+          }
         }
       } catch (err) {
+        console.error("Error fetching billing details:", err);
+        // Fallback to session data on error
+        if (session?.user) {
+          const fallbackData = {
+            firstName: session.user.name?.split(' ')[0] || '',
+            lastName: session.user.name?.split(' ').slice(1).join(' ') || '',
+            email: session.user.email || '',
+            phone: '',
+            city: '',
+            zip: '',
+            address: '',
+          };
+          console.log("Using fallback billing data on error:", fallbackData);
+          setBillingDetails(fallbackData);
+        }
         setBillingExists(false);
       }
     };
     if (session) fetchBillingDetails();
   }, [session]);
 
-  const { activeStep, setActiveStep } = useSteps({
-    index: 0,
-    count: steps.length,
-  });
+  // Debug billing details state changes
+  useEffect(() => {
+    console.log("Billing details state changed:", billingDetails);
+  }, [billingDetails]);
 
   const [categories, setCategories] = useState<
     {
@@ -592,6 +643,18 @@ const CreatePost = () => {
       imagesLink: [] as string[],
     }
   );
+
+  const steps = getSteps(postFormData.is_sponsored);
+  const { activeStep, setActiveStep } = useSteps({
+    index: 0,
+    count: steps.length,
+  });
+  
+  // Allow step 4 for payment success (final step)
+  const currentStep = Math.min(activeStep, steps.length);
+  
+  // Debug current step
+  console.log("Current step:", currentStep, "Active step:", activeStep, "Total steps:", steps.length, "Is sponsored:", postFormData.is_sponsored);
 
   useEffect(() => {
     if (session?.accessToken) {
@@ -914,6 +977,13 @@ const validateImage = (file: File): ValidationError | null => {
               }
               imageFormData.append("bucket_name", "activities");
               imageFormData.append("activity_id", activity_id);
+              
+              console.log("Post creation - Activity ID:", activity_id);
+              console.log("Post creation - Activity ID type:", typeof activity_id);
+              console.log("Post creation - FormData entries:");
+              for (let [key, value] of imageFormData.entries()) {
+                console.log(`${key}:`, value);
+              }
 
               try {
                 const imgResponse = await fetch("/api/images", {
@@ -921,15 +991,32 @@ const validateImage = (file: File): ValidationError | null => {
                   body: imageFormData,
                   headers,
                 });
+                
+                console.log("Post image upload response status:", imgResponse.status);
+                console.log("Post image upload response ok:", imgResponse.ok);
+                
                 if (!imgResponse.ok) {
-                  throw new Error(`Image upload failed`);
+                  const errorText = await imgResponse.text();
+                  console.error("Post image upload error response:", errorText);
+                  throw new Error(`Image upload failed: ${imgResponse.status} ${imgResponse.statusText}`);
                 }
+                
+                const responseData = await imgResponse.json();
+                console.log("Post image upload success:", responseData);
+                
+                toast({
+                  title: "Images uploaded successfully!",
+                  status: "success",
+                  duration: 3000,
+                });
                
               } catch (error) {
-                console.error("Error uploading image", error);
+                console.error("Error uploading post images:", error);
                 toast({
-                  title: `Uploading Images.. failed..`,
+                  title: `Uploading Images failed`,
+                  description: error instanceof Error ? error.message : "Unknown error",
                   status: "error",
+                  duration: 5000,
                 });
                 router.refresh();
               }
@@ -980,6 +1067,7 @@ const validateImage = (file: File): ValidationError | null => {
 
     // Save billing details if not already saved
     if (!billingExists) {
+      
       try {
         await axios.post('/api/billing-details', {
           firstName: billingDetails.firstName,
@@ -1022,7 +1110,9 @@ const validateImage = (file: File): ValidationError | null => {
           //const orderRes = await axios.post('/api/order-details', { cart });
           toast({ title: 'Payment successful!', status: 'success' });
           //router.push('/vendor/dashboard');
-          setActiveStep(activeStep + 1);
+          // Payment successful - go to final step to show Create Post button
+          console.log('Payment successful, setting activeStep to 4');
+          setActiveStep(4);
         }
       } catch (err: any) {
         toast({ title: err.message || 'Payment failed', status: 'error' });
@@ -1077,7 +1167,7 @@ useEffect(() => {
       >
         <Box flex="1" w={"full"}>
           <Stepper
-            index={activeStep}
+            index={currentStep}
             colorScheme="orange"
             bgColor={"white"}
             mb="20px"
@@ -1101,7 +1191,7 @@ useEffect(() => {
             ))}
           </Stepper>
 
-          {activeStep === 0 && (
+          {currentStep === 0 && (
             <Box
               p="20px"
               bgColor={"#FFF"}
@@ -1337,7 +1427,7 @@ useEffect(() => {
                             </Box>
                           ) : (
                             <Box p={6}>
-                             <Text fontSize={{base:"5px",sm:"10px",md:"10px",lg:"22px"}} fontWeight="500" color={'#000'} as={'h1'} align={"center"}>
+                              <Text fontSize={{base:"5px",sm:"10px",md:"10px",lg:"22px"}} fontWeight="500" color={'#000'} as={'h1'} align={"center"}>
                                 Sponsored posts remain active for <Text as={"span"} color={'#F9690E'}>30 Days</Text> and require one-time payment of <Text as={"span"} color={'#F9690E'}>$2</Text>.
                                 Once payment is completed, your post will be displayed as a Sponsored post on the homepage, as shown below
                               </Text>
@@ -1380,7 +1470,7 @@ useEffect(() => {
           )}
 
           {/* Optional Fields */}
-          {activeStep === 1 && (
+          {currentStep === 1 && (
             <Box p="20px" bgColor={"#FFF"} border={"1px solid #F1F5F9"} borderRadius={"12px"}>
               <FormControl display={"flex"} flexDir={"column"} gap="20px">
                 <Box>
@@ -1525,7 +1615,7 @@ useEffect(() => {
           )}
 
           {/* Review Step */}
-          {activeStep === 2 && (
+          {currentStep === 2 && (
             <Box display={"flex"} flexDir={"column"} gap="20px" w="full">
               <Box
                 display={"flex"}
@@ -1707,7 +1797,8 @@ useEffect(() => {
             </Box>
           )}
 
-          {activeStep === 3 && (
+                    {/* Payment Step - Only show on step 3 for sponsored posts */}
+                    {currentStep === 3 && postFormData.is_sponsored && (
             <PaymentForm
               nameOnCard={nameOnCard}
               setNameOnCard={setNameOnCard}
@@ -1719,8 +1810,53 @@ useEffect(() => {
             />
           )}
 
-          {/* Action Bar */}
-          {activeStep !== 3 && (
+          {/* Final Step - Create Post (after payment) */}
+          {currentStep === 4 && postFormData.is_sponsored && (
+            <Box
+              bg="#fff"
+              borderRadius="16px"
+              border="1px solid #F1F5F9"
+              boxShadow="0 2px 8px rgba(0,0,0,0.04)"
+              p={{ base: 6, md: 10 }}
+              mb={6}
+              maxW="900px"
+              mx="auto"
+              textAlign="center"
+            >
+              <Box mb={6}>
+                <Heading fontSize="xl" color="#334155" mb={4}>
+                  Payment Successful! 🎉
+                </Heading>
+                <Text fontSize="lg" color="#64748B" mb={6}>
+                  Your payment has been processed successfully. You can now create your sponsored post.
+                </Text>
+                <Box p={4} bg="green.50" borderRadius="8px" border="1px solid green.200">
+                  <Text color="green.800" fontWeight="medium">
+                    ✓ Payment completed
+                  </Text>
+                  <Text color="green.700" fontSize="sm" mt={1}>
+                    Your post will be featured as a sponsored post for 30 days
+                  </Text>
+                </Box>
+              </Box>
+            </Box>
+          )}
+
+          {/* Debug: Show current step info if no content is rendered */}
+          {currentStep !== 0 && currentStep !== 1 && currentStep !== 2 && currentStep !== 3 && currentStep !== 4 && (
+                          <Box p="20px" bgColor="#FFF" border="1px solid #F1F5F9" borderRadius="12px">
+                <Text>Debug: Current step is {currentStep}, Active step is {activeStep}</Text>
+                <Text>Total steps: {steps.length}</Text>
+                <Text>Is sponsored: {postFormData.is_sponsored ? 'Yes' : 'No'}</Text>
+                <Text>Step 0 (Required): {currentStep === 0 ? 'ACTIVE' : 'inactive'}</Text>
+                <Text>Step 1 (Optional): {currentStep === 1 ? 'ACTIVE' : 'inactive'}</Text>
+                <Text>Step 2 (Preview): {currentStep === 2 ? 'ACTIVE' : 'inactive'}</Text>
+                <Text>Step 3 (Payment): {currentStep === 3 ? 'ACTIVE' : 'inactive'}</Text>
+              </Box>
+          )}
+
+          {/* Action Bar - Show on all steps except payment step (step 3) */}
+          {currentStep !== 3 && (
             <Box
               display={"flex"}
               marginTop={"20px"}
@@ -1739,7 +1875,7 @@ useEffect(() => {
                 borderTop="1px solid #E2E8F0"
               >
                 <Box display="flex" alignItems="center" gap="16px" justifyContent="space-between">
-                  {activeStep > 0 ? (
+                  {currentStep > 0 ? (
                     <Button size="md" paddingX="44px" borderRadius="3px" color="F9690E" onClick={handlePrevious}>
                       Back
                     </Button>
@@ -1749,22 +1885,22 @@ useEffect(() => {
                     </Button>
                   )}
                   {/* On preview step: if not sponsored, show Create Post and save post; if sponsored, show Next and go to payment */}
-                  {activeStep === 2 && !postFormData.is_sponsored ? (
+                  {currentStep === 2 && !postFormData.is_sponsored ? (
                     <Button color="#F9690E" onClick={handleNext} disabled={isProcessing}>
                       Create Post
                     </Button>
-                  ) : activeStep === 2 && postFormData.is_sponsored ? (
+                  ) : currentStep === 2 && postFormData.is_sponsored ? (
                     <Button color="#F9690E" onClick={() => setActiveStep(3)} disabled={isProcessing}>
                       Next
                     </Button>
                   ) : 
-                  activeStep === 4 && postFormData.is_sponsored ? (
+                  currentStep === 4 && postFormData.is_sponsored ? (
                     <Button colorScheme="orange" onClick={handleNext} disabled={isProcessing}>
                       Create Post
                     </Button>
                   ) : (
                     <Button color="#F9690E" onClick={handleNext} disabled={isProcessing}>
-                      {activeStep === 3 ? "Create Post" : "Next"}
+                      {currentStep === (postFormData.is_sponsored ? 3 : 2) ? "Create Post" : "Next"}
                     </Button>
                   )}
                 </Box>
@@ -1779,7 +1915,7 @@ useEffect(() => {
             base: "20px",
             md: "0px",
           }}
-          display={activeStep == 2 ? "none" : "block"}
+          display={activeStep === 2 ? "none" : "block"}
         >
           {CreatepostPagedata.regulationsHeading.map((heading, index) => (
             <Text key={index} color="#64748B" fontSize={"18px"} fontWeight={"600"} pb="25px">
