@@ -1595,12 +1595,7 @@ useEffect(() => {
                   <Text textAlign="center" color="gray.500" mt="4">
                     No messages yet. Be the first to send a message!
                   </Text>
-                  <Text textAlign="center" color="gray.400" mt="2" fontSize="sm">
-                    Debug: messages.length = {messages.length}, selectedActivityId = {selectedActivityId}
-                  </Text>
-                  <Text textAlign="center" color="gray.400" mt="1" fontSize="sm">
-                    Debug: selectedGroup = {selectedGroup?.title}, userData = {userData?.id}
-                  </Text>
+                  
                 </Box>
               ) : (
                 <>
