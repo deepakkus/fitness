@@ -185,6 +185,7 @@ export async function GET(request: NextRequest) {
         { title: { contains: title } },
         { sub_title: { contains: title } },
         { description: { contains: title } },
+        { users: { name: { contains: title } } }, // Search by user name who created the post
       ]
     });
   }
