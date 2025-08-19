@@ -1137,7 +1137,7 @@ export default function EventPage() {
                     By {eventUserData?.name}
                   </Text>
                   <Text fontSize={"14px"} color="#94A3B8">
-                    {`${eventUserData?.location?.split("city: ")[1]?.split(", zip")[0]}`}
+                    {eventData?.city || "Location not specified"}
                   </Text>
                 </Box>
               </Box>
