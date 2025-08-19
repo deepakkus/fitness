@@ -676,11 +676,11 @@ const validateEventForm = (formData: EventFormData, activeStep: number): Validat
       errors.push({ field: 'start_time', message: 'Start time is required' });
     }
 
-    if (!formData.end_time) {
-      errors.push({ field: 'end_time', message: 'End time is required' });
-    } else if (formData.end_time <= formData.start_time) {
-      errors.push({ field: 'end_time', message: 'End time must be after start time' });
-    }
+    // if (!formData.end_time) {
+    //   errors.push({ field: 'end_time', message: 'End time is required' });
+    // } else if (formData.end_time <= formData.start_time) {
+    //   errors.push({ field: 'end_time', message: 'End time must be after start time' });
+    // }
 
     // Description validation
     const strippedDescription = formData.description.replace(/<[^>]*>/g, '').trim();
@@ -1365,7 +1365,7 @@ useEffect(() => {
                 
                 <Box display={"flex"} gap="20px">
                     {/* End Time */}
-                  <Box flex="1">
+                  {/* <Box flex="1">
                     <FormLabel color={"#475569"} fontSize={"14px"}>
                       End Time
                       <span style={{ color: 'red' }}>*</span>
@@ -1378,7 +1378,7 @@ useEffect(() => {
                       name="end_time"
                       borderRadius={"3px"}
                     />
-                  </Box>
+                  </Box> */}
                   <Box flex="1">
                       <FormLabel color={"#475569"} fontSize={"14px"}>
                         {`Sponsord Post?`}

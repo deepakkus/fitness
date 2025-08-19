@@ -299,9 +299,7 @@ const validateField = (fieldName: keyof ValidationRules, value: any, context: { 
       if (rules.required && !value) {
         return { field: fieldName, message: 'End time is required' };
       }
-      if (context.startTime && !isValidTimeRange(context.startTime, value)) {
-        return { field: fieldName, message: 'End time must be after start time' };
-      }
+      // Time validation removed - users can set same start and end time
       break;
 
     case 'max_participants':
@@ -812,16 +810,7 @@ const validateImage = (file: File): ValidationError | null => {
         return;
       }
       
-      // Additional time validation
-      if (postFormData.end_time <= postFormData.start_time) {
-        toast({
-          title: 'End time must be after start time',
-          status: 'error',
-          duration: 3000,
-          isClosable: true,
-        });
-        return;
-      }
+      // Time validation removed - users can set same start and end time
   
       setActiveStep(activeStep + 1);
     } else if (activeStep === 1) {
@@ -1319,8 +1308,8 @@ useEffect(() => {
                   </Box>
                 </Box>
 
-                {/* End Time */}
-                <Box>
+                {/* End Time - Commented out for now */}
+                {/* <Box>
                 <FormLabel color={"#475569"} fontSize={"14px"}>
                     {CreatepostPagedata.formLabels[7]}
                     <span style={{ color: 'red' }}>*</span>
@@ -1333,7 +1322,7 @@ useEffect(() => {
                     name="end_time"
                     borderRadius={"3px"}
                   />
-                </Box>
+                </Box> */}
 
                 {/* Max Participants */}
                
@@ -1745,20 +1734,21 @@ useEffect(() => {
                     </Box>
                     <Box>
                       <Text fontSize={"14px"} color="#94A3B8" mb={"5px"}>
-                        Start Time:
+                        Start Time
                       </Text>
                       <Text fontSize={"14px"} color="#334155" mb={"5px"}>
                         {postFormData.start_time}
                       </Text>
                     </Box>
-                    <Box>
+                     {/* End Time - Commented out for now */}
+                     {/* <Box>
                       <Text fontSize={"14px"} color="#94A3B8" mb={"5px"}>
                         End Time:
                       </Text>
                       <Text fontSize={"14px"} color="#334155" mb={"5px"}>
                         {postFormData.end_time}
                       </Text>
-                    </Box>
+                    </Box> */} 
                   </Box>
 
                   {/* Rules Section */}
