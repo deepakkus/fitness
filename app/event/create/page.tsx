@@ -557,10 +557,17 @@ useEffect(() => {
     // Fetch billing details for logged in user
     const fetchBillingDetails = async () => {
       try {
+        console.log("Fetching billing details for event creation...");
+        console.log("Session data:", session);
+        
         const res = await axios.get('/api/billing-details', { withCredentials: true });
+        console.log("Billing details response:", res.data);
+        
         if (res.data && res.data.data) {
           const b = res.data.data;
-          setBillingDetails({
+          console.log("Billing data received:", b);
+          
+          const billingData = {
             firstName: b.first_name || '',
             lastName: b.last_name || '',
             email: b.email || '',
@@ -568,21 +575,56 @@ useEffect(() => {
             city: b.city || '',
             zip: b.zip || '',
             address: b.address || '',
-          });
+          };
+          
+          console.log("Setting billing details:", billingData);
+          setBillingDetails(billingData);
           setBillingExists(true);
         } else {
+          console.log("No billing details found in API response, using session data");
+          // Fallback to session data if no billing details exist
+          if (session?.user) {
+            const fallbackData = {
+              firstName: session.user.name?.split(' ')[0] || '',
+              lastName: session.user.name?.split(' ').slice(1).join(' ') || '',
+              email: session.user.email || '',
+              phone: '',
+              city: '',
+              zip: '',
+              address: '',
+            };
+            console.log("Using fallback billing data:", fallbackData);
+            setBillingDetails(fallbackData);
+          }
           setBillingExists(false);
         }
-      } catch (err) {
+      } catch (error) {
+        console.error("Error fetching billing details:", error);
+        // Fallback to session data on error
+        if (session?.user) {
+          const fallbackData = {
+            firstName: session.user.name?.split(' ')[0] || '',
+            lastName: session.user.name?.split(' ').slice(1).join(' ') || '',
+            email: session.user.email || '',
+            phone: '',
+            city: '',
+            zip: '',
+            address: '',
+          };
+          console.log("Using fallback billing data on error:", fallbackData);
+          setBillingDetails(fallbackData);
+        }
         setBillingExists(false);
       }
     };
     if (session) fetchBillingDetails();
-  }, [session]);
+    }, [session]);
+  
 
+  
   const { activeStep, setActiveStep } = useSteps({
     index: 0,
-    count: 3,
+    count: eventFormData.is_sponsored ? 4 : 3,
   });
 
 
@@ -626,9 +668,9 @@ const validateEventForm = (formData: EventFormData, activeStep: number): Validat
     if (!formData.start_date) {
       errors.push({ field: 'start_date', message: 'Start date is required' });
     } 
-	//else if (selectedDate < currentDate) {
-      //errors.push({ field: 'start_date', message: 'Start date cannot be in the past' });
-   // }
+    // else if (selectedDate < currentDate) {
+    //   errors.push({ field: 'start_date', message: 'Start date cannot be in the past' });
+    // }
 
     if (!formData.start_time) {
       errors.push({ field: 'start_time', message: 'Start time is required' });
@@ -843,6 +885,24 @@ const validateImage = (file: File): ValidationError | null => {
     address: '',
   });
   const [billingExists, setBillingExists] = useState(false);
+  
+  // Initialize billing details with session data immediately
+  useEffect(() => {
+    if (session?.user) {
+      console.log("Initializing billing details with session data:", session.user);
+      const initialBillingData = {
+        firstName: session.user.name?.split(' ')[0] || '',
+        lastName: session.user.name?.split(' ').slice(1).join(' ') || '',
+        email: session.user.email || '',
+        phone: '',
+        city: '',
+        zip: '',
+        address: '',
+      };
+      console.log("Setting initial billing data:", initialBillingData);
+      setBillingDetails(initialBillingData);
+    }
+  }, [session]);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
   // Event handlers
@@ -1024,7 +1084,7 @@ const validateImage = (file: File): ValidationError | null => {
     if (!cardElement) return;
 
     setIsProcessing(true);
-	console.log('fname--' +billingDetails.firstName);
+
     // Save billing details if not already saved
     if (!billingExists) {
       try {
@@ -1142,18 +1202,20 @@ useEffect(() => {
 
               <StepSeparator />
             </Step>
-            <Step key={3}>
-              <StepIndicator>
-                <StepStatus complete={<StepIcon />} incomplete={<StepNumber />} active={<StepNumber />} />
-              </StepIndicator>
+            {eventFormData.is_sponsored && (
+              <Step key={3}>
+                <StepIndicator>
+                  <StepStatus complete={<StepIcon />} incomplete={<StepNumber />} active={<StepNumber />} />
+                </StepIndicator>
 
-              <Box flexShrink="0">
-                <StepTitle>{`Payment`}</StepTitle>
-                <StepDescription>{`Payment`}</StepDescription>
-              </Box>
+                <Box flexShrink="0">
+                  <StepTitle>{`Payment`}</StepTitle>
+                  <StepDescription>{`Payment`}</StepDescription>
+                </Box>
 
-              <StepSeparator />
-            </Step>
+                <StepSeparator />
+              </Step>
+            )}
           </Stepper>
 
           {activeStep === 0 && (
@@ -1392,12 +1454,12 @@ useEffect(() => {
                                               ) : (
                                                 <Box p={6}>
                                                   <Text fontSize={{base:"5px",sm:"10px",md:"10px",lg:"22px"}} fontWeight="500" color={'#000'} as={'h1'} align={"center"}>
-													Sponsored posts remain active for <Text as={"span"} color={'#F9690E'}>30 Days</Text> and require one-time payment of <Text as={"span"} color={'#F9690E'}>$2</Text>.
-													Once payment is completed, your post will be displayed as a Sponsored post on the homepage, as shown below
-												  </Text>
-												  <Text fontSize={{base:"15px",sm:"18px",md:"20px",lg:"32px"}} fontWeight="bold" mb={4} color={'#F9690E'} as={'h2'}>
-													On the Create Post page, simply select "Yes" from the Sponsored Post dropdown to mark your post as sponsored.
-												  </Text>
+                                                          Sponsored posts remain active for <Text as={"span"} color={'#F9690E'}>30 Days</Text> and require one-time payment of <Text as={"span"} color={'#F9690E'}>$2</Text>.
+                                                          Once payment is completed, your post will be displayed as a Sponsored post on the homepage, as shown below
+                                                  </Text>
+                                                  <Text fontSize={{base:"15px",sm:"18px",md:"20px",lg:"32px"}} fontWeight="bold" mb={4} color={'#F9690E'} as={'h2'}>
+                                                    On the Create Post page, simply select "Yes" from the Sponsored Post dropdown to mark your post as sponsored.
+                                                  </Text>
                                                   <Image
                                                     // boxSize='100%'
                                                     w={"100%"}
