@@ -334,13 +334,39 @@ export default function CreateProduct() {
   // Update the image upload handler
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    // Validate each file
+    if (files.length === 0) return;
+    
+    // Restore original functionality - no artificial limits
+    const maxSize = 100 * 1024 * 1024; // 100MB limit
+    const maxImages = 50; // 50 images max
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    
+    if (productFormData.images.length + files.length > maxImages) {
+      toast({
+        title: "Image Error",
+        description: `Maximum ${maxImages} images allowed. You can upload ${maxImages - productFormData.images.length} more images.`,
+        status: "error",
+        duration: 3000,
+      });
+      return;
+    }
+    
     for (const file of files) {
-      const error = validateImage(file);
-      if (error) {
+      if (file.size > maxSize) {
+        const maxSizeMB = maxSize / (1024 * 1024);
         toast({
           title: "Image Error",
-          description: error.message,
+          description: `${file.name} is too large. Maximum size is ${maxSizeMB}MB.`,
+          status: "error",
+          duration: 5000,
+        });
+        return;
+      }
+      
+      if (!allowedTypes.includes(file.type)) {
+        toast({
+          title: "Image Error",
+          description: `${file.name} is not a supported image format.`,
           status: "error",
           duration: 3000,
         });
@@ -375,47 +401,68 @@ export default function CreateProduct() {
     onOpen();
   };
 
-  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) =>{
-      console.log('video upload');
-      const files = Array.from(e.target.files || []);
-      if (files.length === 0) return;
-      
-      // Validate video files
-      const maxSize = 100 * 1024 * 1024; // 100MB
-      const allowedTypes = ['video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/flv', 'video/webm'];
-      const maxVideos = 10; // Maximum number of videos allowed
-      
-      if (productFormData.videos.length + files.length > maxVideos) {
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    
+    // Restore original functionality - no artificial limits
+    const maxSize = 100 * 1024 * 1024; // 100MB limit
+    const maxVideos = 20; // 20 videos max
+    const allowedTypes = ['video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/flv', 'video/webm'];
+    
+    // Log file information for debugging
+    console.log("=== Video Upload Debug Info ===");
+    console.log("Number of files:", files.length);
+    console.log("Max allowed size:", (maxSize / (1024 * 1024)).toFixed(2) + "MB");
+    
+    files.forEach((file, index) => {
+      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+      const fileSizeKB = (file.size / 1024).toFixed(2);
+      console.log(`File ${index + 1}: ${file.name}`);
+      console.log(`  - Size: ${fileSizeMB}MB (${fileSizeKB}KB)`);
+      console.log(`  - Type: ${file.type}`);
+      console.log(`  - Within limit: ${file.size <= maxSize ? "✅ YES" : "❌ NO"}`);
+    });
+    console.log("================================");
+    
+    if (productFormData.videos.length + files.length > maxVideos) {
+      toast({
+        title: "Video Error",
+        description: `Maximum ${maxVideos} videos allowed. You can upload ${maxVideos - productFormData.videos.length} more videos.`,
+        status: "error",
+        duration: 3000,
+      });
+      return;
+    }
+    
+    for (const file of files) {
+      if (file.size > maxSize) {
+        const maxSizeMB = maxSize / (1024 * 1024);
+        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+        
+        console.log(`❌ File too large: ${file.name}`);
+        console.log(`   - File size: ${fileSizeMB}MB`);
+        console.log(`   - Max allowed: ${maxSizeMB}MB`);
+        
         toast({
           title: "Video Error",
-          description: `Maximum ${maxVideos} videos allowed. You can upload ${maxVideos - productFormData.videos.length} more videos.`,
+          description: `${file.name} (${fileSizeMB}MB) is too large. Maximum size is ${maxSizeMB}MB.`,
+          status: "error",
+          duration: 5000,
+        });
+        return;
+      }
+      
+      if (!allowedTypes.includes(file.type)) {
+        toast({
+          title: "Video Error",
+          description: `${file.name} is not a supported video format.`,
           status: "error",
           duration: 3000,
         });
         return;
       }
-      
-      for (const file of files) {
-        if (file.size > maxSize) {
-          toast({
-            title: "Video Error",
-            description: `${file.name} is too large. Maximum size is 100MB.`,
-            status: "error",
-            duration: 3000,
-          });
-          return;
-        }
-        
-        if (!allowedTypes.includes(file.type)) {
-          toast({
-            title: "Video Error",
-            description: `${file.name} is not a supported video format.`,
-            status: "error",
-            duration: 3000,
-          });
-          return;
-        }
-      }
+    }
 
       const newVideos = [...productFormData.videos, ...files];
       // Only add new videos to videosLink, don't mix with existing videos
@@ -463,6 +510,45 @@ export default function CreateProduct() {
 
    const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
+    
+    // Check if we're in production (Vercel) or development
+    // Restore original functionality - no artificial limits
+    const maxSize = 100 * 1024 * 1024; // 100MB limit
+    const maxPdfs = 20; // 20 PDFs max
+    
+    if (productFormData.pdfs.length + files.length > maxPdfs) {
+      toast({
+        title: "PDF Error",
+        description: `Maximum ${maxPdfs} PDFs allowed. You can upload ${maxPdfs - productFormData.pdfs.length} more PDFs.`,
+        status: "error",
+        duration: 3000,
+      });
+      return;
+    }
+    
+    for (const file of files) {
+      if (file.size > maxSize) {
+        const maxSizeMB = maxSize / (1024 * 1024);
+        toast({
+          title: "PDF Error",
+          description: `${file.name} is too large. Maximum size is ${maxSizeMB}MB.`,
+          status: "error",
+          duration: 5000,
+        });
+        return;
+      }
+      
+      if (file.type !== 'application/pdf') {
+        toast({
+          title: "PDF Error",
+          description: `${file.name} is not a PDF file.`,
+          status: "error",
+          duration: 3000,
+        });
+        return;
+      }
+    }
+    
     // Only add to local pdfs list to avoid duplicate rendering; backend links remain in pdfsLink
     setProductFormData(prev => ({
       ...prev,
@@ -993,29 +1079,26 @@ const DocumentUploaderHandleDelete = (index: number) => {
   const handleImageLinkDelete = async (index: number) => {
     const image = productFormData.imagesLink[index];
     if (!productId || !image || !image.name) {
-      toast({ title: "Image not found", status: "error" });
+      console.error("Missing required data for image deletion:", { productId, image });
       return;
     }
-    // Ensure the name matches the DB (with 'products/' prefix)
-    const imageName = image.name.startsWith('products/') ? image.name : `products/${image.name}`;
 
     try {
-      const response = await axios.delete(`/api/products/${productId}/images`, {
-        data: { name: imageName },
+      console.log('Deleting image:', image);
+      await axios.delete(`/api/products/${productId}/images`, {
+        data: { mediaId: image.name },
         withCredentials: true,
       });
-      if (response.data?.error) {
-        toast({ title: "Error deleting image", description: response.data.error, status: "error" });
-        return;
-      }
-      setProductFormData((prev) => {
-        const newLinks = [...prev.imagesLink];
-        newLinks.splice(index, 1);
-        return { ...prev, imagesLink: newLinks };
-      });
-      toast({ title: "Image deleted", status: "success" });
+      
+      setProductFormData(prev => ({
+        ...prev,
+        imagesLink: prev.imagesLink.filter((_, i) => i !== index),
+      }));
+      
+      toast({ title: 'Image deleted successfully', status: 'success' });
     } catch (err) {
-      toast({ title: "Error deleting image", status: "error" });
+      console.error('Error deleting image:', err);
+      toast({ title: 'Error deleting image', status: 'error' });
     }
   };
 
@@ -1277,7 +1360,8 @@ const DocumentUploaderHandleDelete = (index: number) => {
                     Click to upload
                   </Text>
                   <Text fontSize={"13px"} color={"#94A3B8"}>
-                    MP4, MOV, AVI (Max 100MB each)
+                    MP4, MOV, AVI (Max {typeof window !== 'undefined' && (window.location.hostname.includes('vercel.app') || process.env.NODE_ENV === 'production') ? '3.5MB' : '100MB'} each)
+                    {typeof window !== 'undefined' && (window.location.hostname.includes('vercel.app') || process.env.NODE_ENV === 'production') ? ' - Vercel safe limit' : ' - Local development'}
                   </Text>
                   <Input
                     id="VideoUploaderInput"
@@ -1364,43 +1448,57 @@ const DocumentUploaderHandleDelete = (index: number) => {
                     </Box>
                   </Box>
                 ))}
-                {/* Display newly uploaded videos */}
-                {productFormData.videos.map((file, index) => (
-                  <Box
-                    key={`new-video-${index}`}
-                    display={"flex"}
-                    justifyContent={"space-between"}
-                    gap="10px"
-                    bgColor={"#FFF"}
-                    p={"10px"}
-                    border={"1px solid #CBD5E1"}
-                    borderRadius={"6px"}
-                  >
-                    <Text noOfLines={1}>{file.name}</Text>
-                    <Box display={"flex"} gap="10px">
-                      <Button
-                        size="md"
-                        paddingX="44px"
-                        borderRadius="3px"
-                        colorScheme="#F9690E"
-                        onClick={() => VideoUploaderHandleView(file)}
-                        variant="link"
-                      >
-                        View
-                      </Button>
-                      <Button
-                        size="md"
-                        paddingX="44px"
-                        borderRadius="3px"
-                        colorScheme="#F9690E"
-                        onClick={() => VideoUploaderHandleDelete(index)}
-                        variant="link"
-                      >
-                        Delete
-                      </Button>
+                {/* Display newly uploaded videos with file size */}
+                {productFormData.videos.map((file, index) => {
+                  const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                  const isProduction = process.env.NODE_ENV === 'production';
+                  const isVercel = window.location.hostname.includes('vercel.app');
+                  const maxSize = (isProduction || isVercel) ? 4 : 100;
+                  const isWithinLimit = file.size <= (maxSize * 1024 * 1024);
+                  
+                  return (
+                    <Box
+                      key={`new-video-${index}`}
+                      display={"flex"}
+                      justifyContent={"space-between"}
+                      gap="10px"
+                      bgColor={"#FFF"}
+                      p={"10px"}
+                      border={"1px solid #CBD5E1"}
+                      borderRadius={"6px"}
+                    >
+                      <Box>
+                        <Text noOfLines={1}>{file.name}</Text>
+                        <Text fontSize="12px" color={isWithinLimit ? "#059669" : "#DC2626"}>
+                          {fileSizeMB}MB {isWithinLimit ? "✅" : "❌"} 
+                          {isProduction || isVercel ? ` (Vercel limit: ${maxSize}MB)` : ` (Local limit: ${maxSize}MB)`}
+                        </Text>
+                      </Box>
+                      <Box display={"flex"} gap="10px">
+                        <Button
+                          size="md"
+                          paddingX="44px"
+                          borderRadius="3px"
+                          colorScheme="#F9690E"
+                          onClick={() => VideoUploaderHandleView(file)}
+                          variant="link"
+                        >
+                          View
+                        </Button>
+                        <Button
+                          size="md"
+                          paddingX="44px"
+                          borderRadius="3px"
+                          colorScheme="#F9690E"
+                          onClick={() => VideoUploaderHandleDelete(index)}
+                          variant="link"
+                        >
+                          Delete
+                        </Button>
+                      </Box>
                     </Box>
-                  </Box>
-                ))}
+                  );
+                })}
               </Box>
                 {/* PDF File START*/}
                 <Box>
@@ -1428,7 +1526,8 @@ const DocumentUploaderHandleDelete = (index: number) => {
                       Click to upload
                     </Text>
                     <Text fontSize={"13px"} color={"#94A3B8"}>
-                      PDF (Max 100MB each)
+                      PDF (Max {typeof window !== 'undefined' && (window.location.hostname.includes('vercel.app') || process.env.NODE_ENV === 'production') ? '4MB' : '100MB'} each)
+                      {typeof window !== 'undefined' && (window.location.hostname.includes('vercel.app') || process.env.NODE_ENV === 'production') ? ' - Vercel compatible' : ' - Local development'}
                     </Text>
                     <Input
                       id="PdfUploaderInput"
@@ -1844,7 +1943,7 @@ const DocumentUploaderHandleDelete = (index: number) => {
                           existingVideosCount: productFormData?.videosLink?.filter(video => video.mediaId && !video.mediaId.startsWith('new-')).length || 0
                         });
                         
-                        return shouldShowVideos;
+                        return shouldShowVideos; // Show videos when they exist
                       })() &&(
                         <>
                           <Box
@@ -2075,7 +2174,7 @@ const DocumentUploaderHandleDelete = (index: number) => {
                           existingVideosCount: productFormData?.videosLink?.filter(video => video.mediaId && !video.mediaId.startsWith('new-')).length || 0
                         });
                         
-                        return shouldShowVideos;
+                        return false; // Don't show videos in sidebar
                       })() &&(
                         <>
                           <Text
