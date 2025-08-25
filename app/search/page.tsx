@@ -26,6 +26,7 @@ import React, { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams, usePathname } from "next/navigation";
 import { FilterIcon, GridIcon, ListIcon, PincodeIcon } from "@/components/Icons";
 import PostCard from "@/components/Card/postCard";
+import ProductCard from "@/components/Card/productCard";
 // import CardItem from "@/components/Card/CardItem";
 import axios from "axios";
 import { useSession } from "next-auth/react";
@@ -52,6 +53,18 @@ interface ActivitySearchItem {
   city: string;
   images: { url: string }[];
   peopleInterested: number;
+  is_sponsored?: boolean;
+}
+
+interface ProductSearchItem {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  created_at: string;
+  images: { url: string }[];
+  type: 'product';
+  added_by: string;
 }
 
 interface ActivityType {
@@ -75,6 +88,7 @@ interface FilterSectionProps {
   categoryOptions: ActivityType[];
   onClose?: () => void;
   clearFilters: () => void;
+  handleSearch?: (e: React.FormEvent) => void;
 }
 
 interface SearchParamsWrapperProps {
@@ -258,6 +272,7 @@ function FilterSection({
 
 function Search() {
   const [activities, setActivities] = useState<ActivitySearchItem[]>([]);
+  const [products, setProducts] = useState<ProductSearchItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
@@ -300,8 +315,8 @@ function Search() {
     window.history.pushState({}, '', newURL);
   }, [pathname]);
 
-  // Modified fetchActivities to use current URL params
-  const fetchActivities = useCallback(async (currentFilters: FilterState, currentPage: number) => {
+  // Modified fetchSearchResults to use current URL params
+  const fetchSearchResults = useCallback(async (currentFilters: FilterState, currentPage: number) => {
     setLoading(currentPage === 1);
     setIsLoadingMore(currentPage !== 1);
 
@@ -314,11 +329,16 @@ function Search() {
       queryParams.set('pageSize', '10');
 
       const response = await fetch(`/api/search?${queryParams.toString()}`);
-      if (!response.ok) throw new Error("Failed to fetch activities");
+      if (!response.ok) throw new Error("Failed to fetch search results");
       const data = await response.json();
 
-      setActivities(prev => currentPage === 1 ? data.data : [...prev, ...data.data]);
-      setHasMore(data.data.length === data.pageSize);
+      // Separate activities and products from the combined results
+      const activityResults = data.data.filter((item: any) => !item.type || item.type !== 'product');
+      const productResults = data.data.filter((item: any) => item.type === 'product');
+
+      setActivities(prev => currentPage === 1 ? activityResults : [...prev, ...activityResults]);
+      setProducts(prev => currentPage === 1 ? productResults : [...prev, ...productResults]);
+      setHasMore(data.hasMore);
       updateURL(currentFilters);
     } catch (err) {
       setError(`An error occurred while fetching activities: ${err}`,);
@@ -343,7 +363,7 @@ function Search() {
     };
     setFilters(urlFilters);
 
-    fetchActivities(urlFilters, 1); // Load initial page
+    fetchSearchResults(urlFilters, 1); // Load initial page
   }, []);
 
   
@@ -416,11 +436,11 @@ function Search() {
   // );
 
   // Use debounce for search input
-  const debouncedFetchActivities = useCallback(
+  const debouncedFetchSearchResults = useCallback(
     debounce((currentFilters: FilterState, page: number) => {
-      fetchActivities(currentFilters, page);
+      fetchSearchResults(currentFilters, page);
     }, 500),
-    [fetchActivities]
+    [fetchSearchResults]
   );
 
 
@@ -434,9 +454,9 @@ function Search() {
     setHasMore(true); // Reset hasMore to true when filters change
 
     if (name === 'title') {
-      debouncedFetchActivities(newFilters, 1);
+      debouncedFetchSearchResults(newFilters, 1);
     } else {
-      fetchActivities(newFilters, 1);
+      fetchSearchResults(newFilters, 1);
     }
   };
 
@@ -444,13 +464,13 @@ function Search() {
   // Load more data when page changes
   useEffect(() => {
     if (page > 1) {
-      fetchActivities(filters, page);
+      fetchSearchResults(filters, page);
     }
-  }, [page, filters, fetchActivities]); // Trigger when page changes
+  }, [page, filters, fetchSearchResults]); // Trigger when page changes
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchActivities(filters, page);
+    fetchSearchResults(filters, page);
   };
 
   const clearFilters = useCallback(() => {
@@ -468,15 +488,15 @@ function Search() {
     setPage(1);
     setHasMore(true);
     
-    // Update URL and fetch activities with empty filters
+    // Update URL and fetch search results with empty filters
     updateURL(emptyFilters);
-    fetchActivities(emptyFilters, 1);
+    fetchSearchResults(emptyFilters, 1);
     
     // Close drawer if on mobile
     if (isMobile && onClose) {
       onClose();
     }
-  }, [fetchActivities, updateURL, isMobile, onClose]);
+  }, [fetchSearchResults, updateURL, isMobile, onClose]);
 
   return (
     <SearchParamsWrapper>
@@ -554,7 +574,7 @@ function Search() {
                 borderLeft={"none"}
               >
                 <Text color={"#475569"} fontSize={"14px"} pl={"6px"}>
-                  {` Showing ${activities.length} results`}
+                  {` Showing ${activities.length + products.length} results`}
                 </Text>
                 <Box display={"flex"} gap={"16px"} alignItems={"center"}>
                   <Box display={"flex"} alignItems={"center"} justifyContent={"center"} gap={"8px"}>
@@ -586,24 +606,91 @@ function Search() {
 
               {error && <Text color="red.500">{error}</Text>}
 
-              <SimpleGrid
-                columns={{ base: 1, md: view == "list" ? 1 : 2, lg: view == "list" ? 1 : 3 }}
-                gap={"20px"}
-                p="20px"
-              >
-                {activities.map((item: ActivitySearchItem) => (
-                  <PostCard key={item.id} postItem={item} view={view} userData={userData} />
-                ))}
-              </SimpleGrid>
-              {isLoadingMore && (
-                <Box textAlign="center" py={4}>
-                  <Text>Loading more activities...</Text>
+              {/* Activities Section */}
+              {activities.length > 0 && (
+                <Box p="20px">
+                  <Text fontSize="24px" fontWeight="bold" mb="20px" color="#334155">
+                    Activities ({activities.length})
+                  </Text>
+                  <SimpleGrid
+                    columns={{ base: 1, md: view == "list" ? 1 : 2, lg: view == "list" ? 1 : 3 }}
+                    gap={"20px"}
+                  >
+                    {activities.map((item: ActivitySearchItem) => {
+                      // Convert ActivitySearchItem to ActivityItem format
+                      const activityItem = {
+                        id: item.id,
+                        title: item.title,
+                        sub_title: item.sub_title || "",
+                        age_group: item.age_group,
+                        is_event: item.is_event,
+                        is_sponsored: item.is_sponsored || false,
+                        available_spots: item.available_spots,
+                        zip: item.zip,
+                        activity_type_id: item.activity_type_id,
+                        added_by: item.added_by,
+                        created_at: item.created_at,
+                        start_time: item.start_time,
+                        end_time: item.end_time,
+                        images: item.images,
+                        peopleInterested: item.peopleInterested
+                      };
+                      
+                      return (
+                        <PostCard 
+                          key={item.id} 
+                          postItem={activityItem} 
+                          view={view} 
+                          userData={userData || undefined} 
+                        />
+                      );
+                    })}
+                  </SimpleGrid>
                 </Box>
               )}
 
-              {!hasMore && activities.length > 0 && (
+              {/* Products Section */}
+              {products.length > 0 && (
+                <Box p="20px">
+                  <Text fontSize="24px" fontWeight="bold" mb="20px" color="#334155">
+                    Products ({products.length})
+                  </Text>
+                  <SimpleGrid
+                    columns={{ base: 1, md: view == "list" ? 1 : 2, lg: view == "list" ? 1 : 3 }}
+                    gap={"20px"}
+                  >
+                    {products.map((item: ProductSearchItem) => (
+                      <ProductCard 
+                        key={item.id} 
+                        productItem={item} 
+                        view={view} 
+                        userData={userData || undefined}
+                      />
+                    ))}
+                  </SimpleGrid>
+                </Box>
+              )}
+
+              {/* No Results Message */}
+              {activities.length === 0 && products.length === 0 && !loading && (
+                <Box p="20px" textAlign="center">
+                  <Text fontSize="18px" color="#64748B">
+                    No results found for "{filters.title}"
+                  </Text>
+                  <Text fontSize="14px" color="#94A3B8" mt="10px">
+                    Try adjusting your search terms or filters
+                  </Text>
+                </Box>
+              )}
+              {isLoadingMore && (
                 <Box textAlign="center" py={4}>
-                  <Text>No more activities to load.</Text>
+                  <Text>Loading more results...</Text>
+                </Box>
+              )}
+
+              {!hasMore && (activities.length > 0 || products.length > 0) && (
+                <Box textAlign="center" py={4}>
+                  <Text>No more results to load.</Text>
                 </Box>
               )}
             </Box>
