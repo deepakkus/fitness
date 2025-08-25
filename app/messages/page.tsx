@@ -1595,13 +1595,11 @@ useEffect(() => {
                   <Text textAlign="center" color="gray.500" mt="4">
                     No messages yet. Be the first to send a message!
                   </Text>
-                  
+
                 </Box>
               ) : (
                 <>
-                  <Text textAlign="center" color="gray.400" mb="2" fontSize="sm">
-                    Debug: Showing {messages.length} messages
-                  </Text>
+
                   {messages.map((message) => (
                     <ChatMessage key={message.id} userId={`${userData?.id}`} message={message} />
                   ))}
@@ -1760,7 +1758,7 @@ useEffect(() => {
                   cursor={"pointer"}
                 />
               </Box>
-              <Box pos={"relative"}>
+              {/* <Box pos={"relative"}>
                 <DocIcon style={{ cursor: "pointer" }} width="20px" height="20px" stroke="#334155" />
                 <Input
                   type="file"
@@ -1774,7 +1772,7 @@ useEffect(() => {
                   opacity={"0"}
                   cursor={"pointer"}
                 />
-              </Box>
+              </Box> */}
             </Box>
           </Box>
         )}
