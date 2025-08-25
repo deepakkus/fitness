@@ -261,6 +261,28 @@ export function OrderProducts({ userId, activeTabIndex, onSelectProductId }: Ord
     });
   }
 
+  // Download file function
+  async function handleFileDownload(blobId: string, fileName: string) {
+    try {
+      const response = await axios.get(`/api/order-messages/attachments/${blobId}`, {
+        responseType: 'blob'
+      });
+      
+      // Create a blob URL and trigger download
+      const blob = new Blob([response.data]);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      toast({ title: "Failed to download file", status: "error", duration: 2000 });
+    }
+  }
+
   // Send a new message
   async function handleSendMessage() {
     if (!newMessage.trim() && selectedFiles.length === 0) return;
@@ -434,15 +456,21 @@ export function OrderProducts({ userId, activeTabIndex, onSelectProductId }: Ord
                         {msg.blobs && msg.blobs.length > 0 && (
                           <Box mt={2} display="flex" flexDirection="column" gap={1}>
                             {msg.blobs.map((blob: any) => (
-                              <a
+                              <Button
                                 key={blob.id}
-                                href={`/api/order-messages/attachments/${blob.id}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{ color: '#3182ce', textDecoration: 'underline', fontSize: '0.95em' }}
+                                variant="link"
+                                color="blue.500"
+                                fontSize="0.95em"
+                                textDecoration="underline"
+                                p={0}
+                                h="auto"
+                                minH="auto"
+                                onClick={() => handleFileDownload(blob.id, blob.name)}
+                                _hover={{ color: 'blue.700' }}
+                                leftIcon={<AttachmentIcon boxSize={3} />}
                               >
                                 {blob.name}
-                              </a>
+                              </Button>
                             ))}
                           </Box>
                         )}
