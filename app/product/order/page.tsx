@@ -231,7 +231,13 @@ function CheckOutProduct() {
   };
 
   const handleCancel = () => {
-    setActiveStep(0);
+    //setActiveStep(0);
+	if (cart.length > 0) {
+      router.push(`/product/${cart[0].id}`);
+    } else {
+      // Fallback to home page if no product in cart
+      router.push('/');
+    }
   };
 
   // Form state
