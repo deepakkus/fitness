@@ -1,5 +1,3 @@
-export const dynamic = 'force-dynamic';
-
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
@@ -15,7 +13,7 @@ export async function GET(request: NextRequest) {
 
     // Get all orders where user is either customer or vendor
     const orders = await prisma.$queryRaw<any[]>`
-      SELECT 
+      SELECT DISTINCT
         o.*, 
         b.first_name AS first_name,
         b.last_name AS last_name,
