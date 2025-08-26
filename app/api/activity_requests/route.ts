@@ -74,6 +74,7 @@ export async function GET(request: NextRequest) {
       return {
         id: `${votingRequest.id.toString()}`,
         activity_id: `${votingRequest.activity_id.toString()}`,
+        user_id: `${votingRequest.user_id.toString()}`,
         user_name: `${votingRequest.users.name}`,
         group_name: votingRequest.activities.title,
         total_votes: votingRequest.votes.length, // Total number of votes cast for the request
@@ -91,7 +92,7 @@ export async function GET(request: NextRequest) {
       },
       include: {
         users_activity_join_requests_added_byTousers: {
-          select: { name: true, profile_picture: true }, // The user who sent the invite
+          select: { id: true, name: true, profile_picture: true }, // The user who sent the invite
         },
         activities: {
           select: {
@@ -112,6 +113,7 @@ export async function GET(request: NextRequest) {
       id: `${pendingRequest.id.toString()}`,
       activity_id: pendingRequest.activity_id,
       type: pendingRequest.activities.is_event ? "event" : "posts",
+      user_id: `${pendingRequest.users_activity_join_requests_added_byTousers?.id.toString()}`,
       user_name: pendingRequest.users_activity_join_requests_added_byTousers?.name,
       group_name: pendingRequest.activities.title,
       membership_count:
@@ -132,7 +134,7 @@ export async function GET(request: NextRequest) {
         ],
       },
       include: {
-        users: { select: { name: true, profile_picture: true } }, // Recipient of the invite or self-request
+        users: { select: { id: true, name: true, profile_picture: true } }, // Recipient of the invite or self-request
         activities: { select: { title: true } },
       },
       orderBy: { created_at: "desc" },
@@ -140,6 +142,7 @@ export async function GET(request: NextRequest) {
 
     const accepted = acceptedInvites.map((invite) => ({
       id: invite.id.toString(),
+      user_id: `${invite.users.id.toString()}`,
       user_name: invite.users.name,
       group_name: invite.activities.title,
       accepted_at: invite.created_at,

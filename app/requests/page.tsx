@@ -30,6 +30,7 @@ dayjs.extend(relativeTime);
 interface Voting {
   id: string;
   activity_id: string;
+  user_id: string;
   user_name: string;
   group_name: string;
   total_votes: number;
@@ -42,6 +43,7 @@ interface Pending {
   id: string;
   activity_id: string;
   type: string;
+  user_id: string;
   user_name: string;
   group_name: string;
   membership_count: string;
@@ -50,6 +52,7 @@ interface Pending {
 }
 
 interface Accepted {
+  user_id?: string;
   user_name: string;
   group_name: string;
   accepted_at: string;
@@ -71,6 +74,7 @@ interface RequestsResponse {
   voting: Array<{
     id: string;
     activity_id: string;
+    user_id: string;
     user_name: string;
     group_name: string;
     total_votes: number;
@@ -82,6 +86,7 @@ interface RequestsResponse {
     id: string;
     activity_id: string;
     type: string;
+    user_id: string;
     user_name: string;
     group_name: string;
     membership_count: string;
@@ -89,6 +94,7 @@ interface RequestsResponse {
     user_image: string;
   }>;
   accepted: Array<{
+    user_id?: string;
     user_name: string;
     group_name: string;
     accepted_at: string;
@@ -376,7 +382,14 @@ function VotingRequestComponent({ request, refetchRequests }: { request: Voting;
           borderRadius="50%"
         />
         <Box>
-          <Text color="#000" fontSize="16px" fontWeight="600">
+          <Text 
+            color="#000" 
+            fontSize="16px" 
+            fontWeight="600"
+            cursor="pointer"
+            _hover={{ color: "#0284C7", textDecoration: "underline" }}
+            onClick={() => window.open(`/profile/${request.user_id}`, '_blank')}
+          >
             {request.user_name}
           </Text>
           <Text color="#64748B" fontSize="16px" fontWeight="600">
@@ -566,7 +579,17 @@ function Pending({ request, refetchRequests }: { request: Pending; refetchReques
               objectFit={"cover"}
             />
             <Box display={"flex"} flex={"1"} flexDirection={"column"}>
-              <Text color={"#000"} fontSize={"16px"} fontWeight={"600"}>
+              <Text 
+                color={"#000"} 
+                fontSize={"16px"} 
+                fontWeight={"600"}
+                cursor="pointer"
+                _hover={{ color: "#0284C7", textDecoration: "underline" }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  window.open(`/profile/${request.user_id}`, '_blank');
+                }}
+              >
                 {request.user_name}
               </Text>
               <Text color={"#64748B"} fontSize={"16px"} fontWeight={"600"}>
@@ -678,7 +701,14 @@ function Accepted({ request }: { request: Accepted }) {
           objectFit={"cover"}
         />
         <Box display={"flex"} flex={"1"} flexDirection={"column"}>
-          <Text color={"#000"} fontSize={"16px"} fontWeight={"600"}>
+          <Text 
+            color={"#000"} 
+            fontSize={"16px"} 
+            fontWeight={"600"}
+            cursor={request.user_id ? "pointer" : "default"}
+            _hover={request.user_id ? { color: "#0284C7", textDecoration: "underline" } : {}}
+            onClick={request.user_id ? () => window.open(`/profile/${request.user_id}`, '_blank') : undefined}
+          >
             {request.user_name}
           </Text>
           <Box display={"flex"} gap="10px" alignItems="center">
