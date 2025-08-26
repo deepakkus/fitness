@@ -36,6 +36,24 @@ export default function DeliveryChat({ type = "vendor", initialOrderId }: { type
   const [productDocuments, setProductDocuments] = useState<any[]>([]);
   const [productPDFs, setProductPDFs] = useState<any[]>([]);
 
+  // Function to download files
+  const downloadFile = async (url: string, filename: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+    }
+  };
+
   // Fetch delivery orders on mount
   useEffect(() => {
     const fetchOrders = async () => {
@@ -48,7 +66,7 @@ export default function DeliveryChat({ type = "vendor", initialOrderId }: { type
         // Auto-select order by initialOrderId if present
         if (res.data.data && res.data.data.length > 0) {
           if (initialOrderId) {
-            const found = res.data.data.find(o => String(o.id) === String(initialOrderId));
+            const found = res.data.data.find((o: any) => String(o.id) === String(initialOrderId));
             setSelectedOrder(found || res.data.data[0]);
           } else {
             setSelectedOrder(res.data.data[0]);
@@ -149,7 +167,7 @@ export default function DeliveryChat({ type = "vendor", initialOrderId }: { type
         setMessages(prev => [...prev, res.data.message]);
         // Emit socket event for real-time update
         if (socket) {
-          socket.emit('order_message:new', { orderId: selectedOrder.id, message: res.data.message });
+          (socket as any).emit('order_message:new', { orderId: selectedOrder.id, message: res.data.message });
         }
       }
       setNewMessage("");
@@ -246,7 +264,16 @@ export default function DeliveryChat({ type = "vendor", initialOrderId }: { type
           <ul style={{ marginLeft: 16 }}>
             {selectedOrder.course_materials.map((cm: any, idx: number) => (
               <li key={cm.id || idx}>
-                <Link href={cm.name} target="_blank">
+                {/* <Text 
+                  as="span" 
+                  cursor="pointer" 
+                  color="blue.500" 
+                  _hover={{ textDecoration: "underline" }}
+                  onClick={() => downloadFile(cm.name, cm.name.split('/').pop() || 'course-material')}
+                >
+                  {cm.name}
+                </Text> */}
+                 <Link href={cm.name} target="_blank">
                     <Text as="span">{cm.name}</Text>
                 </Link>
               </li>
@@ -260,9 +287,15 @@ export default function DeliveryChat({ type = "vendor", initialOrderId }: { type
           <ul style={{ marginLeft: 16 }}>
             {productDocuments.map((doc, idx) => (
               <li key={doc.mediaId || idx}>
-                <Link href={`/api/products/${selectedOrder.product_id}/media/${doc.mediaId}/document`} target="_blank">
-                  <Text as="span">{doc.name}</Text>
-                </Link>
+                <Text 
+                  as="span" 
+                  cursor="pointer" 
+                  color="blue.500" 
+                  _hover={{ textDecoration: "underline" }}
+                  onClick={() => downloadFile(`/api/products/${selectedOrder.product_id}/media/${doc.mediaId}/document`, doc.name)}
+                >
+                  {doc.name}
+                </Text>
               </li>
             ))}
           </ul>
@@ -275,9 +308,15 @@ export default function DeliveryChat({ type = "vendor", initialOrderId }: { type
           <ul style={{ marginLeft: 16 }}>
             {productPDFs.map((pdf: any, idx: number) => (
               <li key={pdf.mediaId || idx}>
-                <Link href={`/api/products/${selectedOrder.product_id}/media/${pdf.mediaId}/pdf`} target="_blank">
-                  <Text as="span">{pdf.name.split('/').pop()}</Text>
-                </Link>
+                <Text 
+                  as="span" 
+                  cursor="pointer" 
+                  color="blue.500" 
+                  _hover={{ textDecoration: "underline" }}
+                  onClick={() => downloadFile(`/api/products/${selectedOrder.product_id}/media/${pdf.mediaId}/pdf`, pdf.name.split('/').pop() || 'document.pdf')}
+                >
+                  {pdf.name.split('/').pop()}
+                </Text>
               </li>
             ))}
           </ul>
