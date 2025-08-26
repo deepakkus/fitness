@@ -63,8 +63,10 @@ export default function PostCard({ userData, postItem, view }: PostCardProps) {
   //const age = `${`${userData?.age_group}`.split("age_")[1]}`.split("_");
   //const age_group_max = `${`${age.split("_")[1]}`.split("-")[1]}`;
 
-  const date = dayjs(postDate).format("MMM DD, YYYY");
-
+  //const date = dayjs(postDate).format("MMM DD, YYYY");
+	
+	
+  const date = dayjs(createdAt).format("MMM DD, YYYY");
   const time = dayjs(createdAt).fromNow();
 
   const PostImages = postItem?.images || [];
